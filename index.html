@@ -369,6 +369,7 @@ body{-webkit-tap-highlight-color:transparent;-webkit-text-size-adjust:100%}
         <div class="editor-grid">
           <div>
             <div class="img-box" onclick="document.getElementById('imgUpload').click()">
+              <div id="driveImgStatus" style="font-size:10px;margin-bottom:4px;text-align:center;color:var(--muted)"></div>
               <div id="imgPlaceholder" style="display:flex;flex-direction:column;align-items:center;gap:3px;color:var(--muted);font-size:10px"><span style="font-size:28px">📷</span>Click para subir</div>
               <img id="editorImg" src="" style="display:none" alt="">
               <div class="img-ov">📷 Cambiar</div>
@@ -774,11 +775,16 @@ body{-webkit-tap-highlight-color:transparent;-webkit-text-size-adjust:100%}
       <p style="font-size:12px;color:var(--muted);margin-bottom:12px">Ingresa tu Client ID de Google Cloud Console.</p>
       <div style="margin-bottom:10px">
         <label style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;display:block;margin-bottom:4px">Google OAuth Client ID</label>
-        <input type="text" id="driveClientId" placeholder="xxxx.apps.googleusercontent.com" style="width:100%;border:1.5px solid var(--border);border-radius:6px;padding:7px 10px;font-size:12px;outline:none">
+        <input type="text" id="driveClientId" placeholder="11656782553-me95p6cvefjn65obpsl0l71bgjs4kf65.apps.googleusercontent.com" style="width:100%;border:1.5px solid var(--border);border-radius:6px;padding:7px 10px;font-size:12px;outline:none">
       </div>
       <div style="margin-bottom:12px">
         <label style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;display:block;margin-bottom:4px">Folder ID (carpeta Cotizaciones 2026)</label>
         <input type="text" id="driveFolderId" placeholder="1JPD3vUPQx2IEG-y8gI-gqJ1xYFWSrk6r" style="width:100%;border:1.5px solid var(--border);border-radius:6px;padding:7px 10px;font-size:12px;outline:none">
+        <div class="form-field" style="margin-top:8px">
+          <label style="font-size:11px;font-weight:700">📷 Carpeta imágenes (ID Drive)</label>
+          <input type="text" id="driveImgFolderId" placeholder="ID carpeta SEDEC_Imagenes (opcional)" style="width:100%;border:1.5px solid var(--border);border-radius:6px;padding:7px 10px;font-size:12px">
+          <div style="font-size:10px;color:var(--muted);margin-top:3px">Crea "SEDEC_Imagenes" en Drive y pega su ID aquí</div>
+        </div>
         <div style="font-size:10px;color:var(--muted);margin-top:3px">El ID está al final de la URL de la carpeta en Drive</div>
       </div>
       <div style="background:#fef3c7;border-radius:6px;padding:10px;font-size:11px;color:#92400e;margin-bottom:12px;line-height:1.6">
@@ -2120,16 +2126,77 @@ function updateTotals() {
 // IMAGES
 // ============================================================
 function onImgUpload(e) {
-  var file=e.target.files[0]; if (!file) return;
-  var reader=new FileReader();
-  reader.onload=function(ev) {
-    var src=ev.target.result;
-    document.getElementById('editorImg').src=src; document.getElementById('editorImg').style.display='block';
-    document.getElementById('imgPlaceholder').style.display='none';
-    if (state.selectedProduct) { imgCache[state.selectedProduct.ref]=src; saveImgs(); }
-    toast('Imagen guardada ✓','ok');
+  var file = e.target.files[0]; if (!file) return;
+
+  // Si Drive está conectado → subir a Drive y guardar solo URL
+  if (driveToken) {
+    uploadImgToDrive(file);
+    return;
+  }
+
+  // Sin Drive → guardar base64 localmente (fallback)
+  var reader = new FileReader();
+  reader.onload = function(ev) {
+    var src = ev.target.result;
+    setProductImg(src);
+    toast('Imagen guardada localmente (conecta Drive para sin límite)','');
   };
   reader.readAsDataURL(file);
+}
+
+async function uploadImgToDrive(file) {
+  toast('⏳ Subiendo imagen a Drive...', '');
+  try {
+    // 1. Subir archivo a Drive
+    var folderId = driveConfig.imgFolderId || driveConfig.folderId || '';
+    var meta = { name: file.name, mimeType: file.type };
+    if (folderId) meta.parents = [folderId];
+
+    var form = new FormData();
+    form.append('metadata', new Blob([JSON.stringify(meta)], {type:'application/json'}));
+    form.append('file', file);
+
+    var resp = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart', {
+      method: 'POST',
+      headers: { Authorization: 'Bearer ' + driveToken },
+      body: form
+    });
+
+    if (!resp.ok) { toast('Error subiendo imagen: ' + resp.status, 'err'); return; }
+    var result = await resp.json();
+    var fileId = result.id;
+
+    // 2. Hacer la imagen pública (anyone with link can view)
+    await fetch('https://www.googleapis.com/drive/v3/files/' + fileId + '/permissions', {
+      method: 'POST',
+      headers: {
+        Authorization: 'Bearer ' + driveToken,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ role: 'reader', type: 'anyone' })
+    });
+
+    // 3. Obtener URL directa para mostrar en img src
+    // Google Drive thumbnail URL — funciona sin auth para imágenes públicas
+    var imgUrl = 'https://drive.google.com/thumbnail?id=' + fileId + '&sz=w400';
+
+    // 4. Guardar URL (no base64) en imgCache
+    setProductImg(imgUrl);
+    toast('☁️ Imagen guardada en Drive — 0 KB locales', 'ok');
+
+  } catch(err) {
+    toast('Error Drive: ' + err.message, 'err');
+  }
+}
+
+function setProductImg(src) {
+  document.getElementById('editorImg').src = src;
+  document.getElementById('editorImg').style.display = 'block';
+  document.getElementById('imgPlaceholder').style.display = 'none';
+  if (state.selectedProduct) {
+    imgCache[state.selectedProduct.ref] = src;
+    saveImgs();
+  }
 }
 function searchImgOnline() {
   if (!state.selectedProduct) return;
@@ -2728,7 +2795,7 @@ function exportPDF() {
     allRows+='<tr><td colspan="6" style="background:#0d1f2e;color:#fff;padding:8px 12px;font-size:11px;font-weight:700;letter-spacing:.5px">'+icon3+' '+cat.name.toUpperCase()+'</td><td style="background:#0d1f2e;color:rgba(255,255,255,.7);padding:8px 12px;text-align:right;font-size:11px">Subtotal: '+fmt(catTotal)+'</td></tr>';
     catItems.forEach(function(item,i) {
       var imgTag=item.img?'<img src="'+item.img+'" style="width:46px;height:46px;object-fit:contain;border-radius:5px;border:1px solid #e2e8f0;background:#f8fafc">':'<div style="width:46px;height:46px;background:#f1f5f9;border-radius:5px;display:flex;align-items:center;justify-content:center;font-size:20px">📦</div>';
-      allRows+='<tr>'+'<td style="padding:9px 10px;text-align:center;color:#94a3b8;font-size:11px">'+(i+1)+'</td>'+'<td style="padding:9px 10px">'+imgTag+'</td>'+'<td style="padding:9px 10px;font-family:monospace;font-size:10px;color:#365979;font-weight:700">'+item.ref+'</td>'+'<td style="padding:9px 10px;font-size:11px;color:#374151;max-width:200px;line-height:1.4">'+item.desc+'</td>'+'<td style="padding:9px 10px;text-align:center;font-weight:700;font-size:12px">'+item.qty+'</td>'+'<td style="padding:9px 10px;text-align:right;color:#64748b;font-size:11px">'+fmt(item.precio)+'</td>'+'<td style="padding:9px 10px;text-align:right;font-weight:800;color:#0f172a;font-size:12px">'+fmt(item.venta)+'</td></tr>';
+      allRows+='<tr>'+'<td style="padding:9px 10px;text-align:center;color:#94a3b8;font-size:11px">'+(i+1)+'</td>'+'<td style="padding:9px 10px">'+imgTag+'</td>'+'<td style="padding:9px 10px;font-family:monospace;font-size:10px;color:#365979;font-weight:700">'+item.ref+'</td>'+'<td style="padding:9px 10px;font-size:11px;color:#374151;max-width:200px;line-height:1.4">'+item.desc+'</td>'+'<td style="padding:9px 10px;text-align:center;font-weight:700;font-size:12px">'+item.qty+'</td>'+'<td style="padding:9px 10px;text-align:right;color:#64748b;font-size:11px">'+fmt(item.qty>0?item.venta/item.qty:item.precio)+'</td>'+'<td style="padding:9px 10px;text-align:right;font-weight:800;color:#0f172a;font-size:12px">'+fmt(item.venta)+'</td></tr>';
     });
     cat.fletes.forEach(function(f) {
       allRows+='<tr style="background:#fffbeb"><td colspan="4" style="padding:9px;font-size:11px;color:#92400e;font-weight:700">🚚 '+f.nombre+' — '+f.desc+'</td><td style="text-align:center;color:#92400e">1</td><td style="text-align:right;color:#92400e">'+fmt(f.valor)+'</td><td style="text-align:right;font-weight:800;color:#92400e">'+fmt(f.valor)+'</td></tr>';
@@ -3054,19 +3121,143 @@ function calcStorageUsage() {
   try {
     var total = 0;
     for (var k in localStorage) {
-      if (localStorage.hasOwnProperty(k)) total += (localStorage[k]||'').length * 2; // UTF-16
+      if (localStorage.hasOwnProperty(k)) total += (localStorage[k]||'').length * 2;
     }
     return total;
   } catch(e) { return 0; }
 }
+
+function getStorageDetail() {
+  var keys = {
+    'sedec_history_v1':        '📋 Historial cotizaciones',
+    'sedec_imgs_v1':           '🖼 Imágenes productos',
+    'sedec_img_cache':         '🖼 Imágenes (caché)',
+    'sedec_custom_prods_v1':   '🏷 Mis Productos',
+    'sedec_cat_overrides_v1':  '🖊 Ediciones catálogo',
+    'sedec_drive_v1':          '☁️ Config Drive',
+    'sedec_sync_file_id':      '🔗 ID archivo sync',
+    'sedec_last_push':         '⬆ Último push',
+    'sedec_last_pull':         '⬇ Último pull',
+    'pwa_banner':              '📱 Banner PWA',
+  };
+  var detail = [];
+  var totalBytes = 0;
+  // Known keys
+  Object.keys(keys).forEach(function(k) {
+    var val = localStorage.getItem(k) || '';
+    var bytes = val.length * 2;
+    totalBytes += bytes;
+    if (bytes > 0) detail.push({ label: keys[k], key: k, bytes: bytes });
+  });
+  // Unknown keys
+  for (var k in localStorage) {
+    if (localStorage.hasOwnProperty(k) && !keys[k]) {
+      var val = localStorage.getItem(k) || '';
+      var bytes = val.length * 2;
+      totalBytes += bytes;
+      if (bytes > 0) detail.push({ label: '❓ ' + k, key: k, bytes: bytes });
+    }
+  }
+  detail.sort(function(a,b){ return b.bytes - a.bytes; });
+  return { detail: detail, totalBytes: totalBytes };
+}
 function updateStorageBar() {
   var bar = document.getElementById('storageBar');
   if (!bar) return;
-  var used = calcStorageUsage();
-  var usedKB = Math.round(used / 1024);
-  var pct = Math.min(100, Math.round(used / (5 * 1024 * 1024) * 100));
-  var color = pct > 80 ? '#dc2626' : pct > 60 ? '#d97706' : '#64748b';
-  bar.innerHTML = '<span style="color:'+color+'">💽 localStorage: '+usedKB+' KB usados ('+pct+'%)</span>';
+  var info = getStorageDetail();
+  var usedKB = Math.round(info.totalBytes / 1024);
+  var pct = Math.min(100, Math.round(info.totalBytes / (5 * 1024 * 1024) * 100));
+  var color = pct > 80 ? '#dc2626' : pct > 60 ? '#d97706' : '#16a34a';
+  bar.innerHTML =
+    '<span onclick="showStorageModal()" style="cursor:pointer;color:'+color+
+    ';text-decoration:underline dotted" title="Ver desglose de almacenamiento">'+
+    '💽 '+usedKB+' KB ('+pct+'%)</span>';
+}
+
+function closeStorageModal(){var m=document.getElementById('storageModal');if(m)m.style.display='none';}
+
+function showStorageModal() {
+  var info = getStorageDetail();
+  var totalKB = Math.round(info.totalBytes / 1024);
+  var pct = Math.min(100, Math.round(info.totalBytes / (5*1024*1024) * 100));
+  var color = pct > 80 ? '#dc2626' : pct > 60 ? '#d97706' : '#16a34a';
+
+  var rows = info.detail.map(function(d) {
+    var kb = (d.bytes / 1024).toFixed(1);
+    var barW = Math.round(d.bytes / info.totalBytes * 100);
+    var canDelete = ['sedec_img_cache','sedec_imgs_v1','sedec_history_v1','sedec_cat_overrides_v1','sedec_custom_prods_v1'].indexOf(d.key) >= 0;
+    return '<div style="margin-bottom:10px">' +
+      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:3px">' +
+        '<span style="font-size:12px;color:#374151">' + d.label + '</span>' +
+        '<div style="display:flex;gap:6px;align-items:center">' +
+          '<span style="font-size:11px;font-weight:700;color:#0f172a">' + kb + ' KB</span>' +
+          (canDelete ? '<button onclick="clearStorageKey(&quot;'+d.key+'&quot;)" style="background:#fee2e2;color:#dc2626;border:none;border-radius:4px;padding:2px 6px;font-size:10px;cursor:pointer">🗑</button>' : '') +
+        '</div>' +
+      '</div>' +
+      '<div style="background:#e2e8f0;border-radius:3px;height:6px">' +
+        '<div style="background:'+color+';width:'+barW+'%;height:6px;border-radius:3px;transition:width .3s"></div>' +
+      '</div>' +
+    '</div>';
+  }).join('');
+
+  var modal = document.getElementById('storageModal');
+  if (!modal) {
+    modal = document.createElement('div');
+    modal.id = 'storageModal';
+    modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:99999;display:flex;align-items:center;justify-content:center;padding:16px';
+    modal.onclick = function(e){ if(e.target===modal) closeStorageModal(); };
+    document.body.appendChild(modal);
+  }
+  modal.style.display = 'flex';
+  modal.innerHTML =
+    '<div style="background:#fff;border-radius:14px;padding:22px;width:100%;max-width:420px;max-height:85vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.3)">' +
+      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">' +
+        '<div style="font-size:16px;font-weight:800;color:#0f172a">💽 Almacenamiento local</div>' +
+        '<button onclick="document.getElementById(&quot;storageModal&quot;).style.display=&quot;none&quot;" style="background:none;border:none;font-size:20px;cursor:pointer;color:#94a3b8">✕</button>' +
+      '</div>' +
+      '<div style="background:#f8fafc;border-radius:8px;padding:12px;margin-bottom:16px;text-align:center">' +
+        '<div style="font-size:24px;font-weight:800;color:'+color+'">' + totalKB + ' KB</div>' +
+        '<div style="font-size:11px;color:#64748b">de ~5.120 KB disponibles ('+pct+'%)</div>' +
+        '<div style="background:#e2e8f0;border-radius:4px;height:8px;margin-top:8px">' +
+          '<div style="background:'+color+';width:'+pct+'%;height:8px;border-radius:4px"></div>' +
+        '</div>' +
+      '</div>' +
+      rows +
+      '<div style="display:flex;gap:8px;margin-top:14px">' +
+        '<button onclick="clearImgCache()" style="flex:1;background:#fff7ed;color:#c2410c;border:1.5px solid #fed7aa;border-radius:8px;padding:8px;font-size:12px;font-weight:700;cursor:pointer">🗑 Limpiar imágenes</button>' +
+        '<button onclick="document.getElementById(&quot;storageModal&quot;).style.display=&quot;none&quot;" style="flex:1;background:#0d1f2e;color:#fff;border:none;border-radius:8px;padding:8px;font-size:12px;font-weight:700;cursor:pointer">Cerrar</button>' +
+      '</div>' +
+    '</div>';
+}
+
+function clearStorageKey(key) {
+  var labels = {
+    'sedec_img_cache':        'las imágenes en caché',
+    'sedec_imgs_v1':          'las imágenes de productos (2300 KB)',
+    'sedec_history_v1':       'TODO el historial de cotizaciones',
+    'sedec_cat_overrides_v1': 'las ediciones del catálogo',
+    'sedec_custom_prods_v1':  'los productos personalizados',
+  };
+  if (!confirm('¿Eliminar ' + (labels[key]||key) + '? Esta acción no se puede deshacer.')) return;
+  localStorage.removeItem(key);
+  if (key === 'sedec_img_cache') { imgCache = {}; }
+  if (key === 'sedec_imgs_v1') { imgCache = {}; localStorage.removeItem('sedec_img_cache'); }
+  if (key === 'sedec_history_v1') { history_list = []; if(typeof renderHistorial==='function') renderHistorial(); }
+  if (key === 'sedec_cat_overrides_v1') { CATALOG_OVERRIDES = {}; applyCatalogOverrides(); }
+  if (key === 'sedec_custom_prods_v1') { CUSTOM_PRODUCTS = []; buildCatalog(); }
+  toast('🗑 Eliminado: ' + (labels[key]||key), 'ok');
+  updateStorageBar();
+  showStorageModal();
+}
+
+function clearImgCache() {
+  if (!confirm('¿Limpiar todas las imágenes de productos? Se liberarán ~2300 KB.\nLas imágenes se pueden volver a cargar cuando lo necesites.')) return;
+  localStorage.removeItem('sedec_imgs_v1');
+  localStorage.removeItem('sedec_img_cache');
+  imgCache = {};
+  toast('🗑 Imágenes eliminadas — espacio liberado', 'ok');
+  updateStorageBar();
+  showStorageModal();
 }
 
 function exportBackupJSON() {
@@ -3342,7 +3533,20 @@ async function confirmarFirmasYGenerar() {
 // GOOGLE DRIVE
 // ============================================================
 var driveConfig = (function(){
-  try { return JSON.parse(localStorage.getItem('sedec_drive_v1')||'{}'); } catch(e){ return {}; }
+  try {
+    var saved = JSON.parse(localStorage.getItem('sedec_drive_v1')||'{}');
+    // Defaults hardcodeados — se pueden sobreescribir desde el modal
+    if (!saved.clientId)    saved.clientId    = '11656782553-me95p6cvefjn65obpsl0l71bgjs4kf65.apps.googleusercontent.com';
+    if (!saved.folderId)    saved.folderId    = '1JPD3vUPQx2IEG-y8gI-gqJ1xYFWSrk6r';
+    if (!saved.imgFolderId) saved.imgFolderId = '1UCgrVYQmnrxSUw58emVUxwCrD-h5zuY0';
+    return saved;
+  } catch(e) {
+    return {
+      clientId:    '11656782553-me95p6cvefjn65obpsl0l71bgjs4kf65.apps.googleusercontent.com',
+      folderId:    '1JPD3vUPQx2IEG-y8gI-gqJ1xYFWSrk6r',
+      imgFolderId: '1UCgrVYQmnrxSUw58emVUxwCrD-h5zuY0'
+    };
+  }
 })();
 var driveToken = null;
 
@@ -3355,8 +3559,10 @@ function showDriveModal() {
   } else {
     document.getElementById('driveConnectedView').style.display = 'none';
     document.getElementById('driveSetupView').style.display     = 'block';
-    if (driveConfig.clientId)  document.getElementById('driveClientId').value  = driveConfig.clientId;
-    if (driveConfig.folderId)  document.getElementById('driveFolderId').value  = driveConfig.folderId;
+    document.getElementById('driveClientId').value = driveConfig.clientId || '';
+    document.getElementById('driveFolderId').value  = driveConfig.folderId  || '';
+    var imgEl = document.getElementById('driveImgFolderId');
+    if (imgEl) imgEl.value = driveConfig.imgFolderId || '';
   }
 }
 
@@ -3364,7 +3570,8 @@ function saveDriveConfig() {
   var cid = document.getElementById('driveClientId').value.trim();
   var fid = document.getElementById('driveFolderId').value.trim();
   if (!cid) { toast('Ingresa el Client ID','err'); return; }
-  driveConfig = {clientId: cid, folderId: fid || '1JPD3vUPQx2IEG-y8gI-gqJ1xYFWSrk6r'};
+  var imgFid = document.getElementById('driveImgFolderId') ? document.getElementById('driveImgFolderId').value.trim() : '';
+  driveConfig = {clientId: cid, folderId: fid || '1JPD3vUPQx2IEG-y8gI-gqJ1xYFWSrk6r', imgFolderId: imgFid};
   localStorage.setItem('sedec_drive_v1', JSON.stringify(driveConfig));
   document.getElementById('driveModal').style.display = 'none';
   toast('Configuración guardada — conectando...','ok');
@@ -3389,6 +3596,14 @@ function updateDriveBadge() {
   } else {
     badge.className = 'drive-no';
     badge.textContent = '☁️ Drive';
+  }
+  // Update image editor indicator
+  var imgStatus = document.getElementById('driveImgStatus');
+  if (imgStatus) {
+    imgStatus.textContent = driveToken
+      ? '☁️ Las imágenes se subirán a Drive (sin límite)'
+      : '⚠️ Conecta Drive para imágenes sin límite de espacio';
+    imgStatus.style.color = driveToken ? '#16a34a' : '#d97706';
   }
 }
 
@@ -3728,6 +3943,10 @@ function saveCustomProduct() {
   saveCustomProds();
   applyCatalogOverrides();
   updateSyncStatus();
+  // Auto-conectar Drive si hay Client ID guardado
+  if (driveConfig.clientId) {
+    setTimeout(function(){ driveSignIn(); }, 1500);
+  }
   renderCustomProdList();
   resetCustomForm();
   toast('✅ Producto '+(editId?'actualizado':'guardado')+': '+ref,'ok');
