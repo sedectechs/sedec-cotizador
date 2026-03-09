@@ -3622,6 +3622,9 @@ function driveSignIn() {
     var client = google.accounts.oauth2.initTokenClient({
       client_id: driveConfig.clientId,
       scope: 'https://www.googleapis.com/auth/drive.file',
+      error_callback: function(err) {
+        toast('Error OAuth: ' + (err.type || JSON.stringify(err)), 'err');
+      },
       callback: function(resp) {
         if (resp.access_token) {
           driveToken = resp.access_token;
@@ -3857,9 +3860,7 @@ generateContract = async function(firmaClienteDataURL, firmaSedecDataURL) {
 };
 
 // Init Drive if already configured
-if (driveConfig.clientId) {
-  setTimeout(function(){ driveSignIn(); }, 1500);
-}
+// Drive se conecta manualmente con el botón ☁️ Drive
 // Init notif schedule if enabled
 if (notifConfig.enabled) {
   setTimeout(scheduleNotifCheck, 3000);
@@ -3943,10 +3944,7 @@ function saveCustomProduct() {
   saveCustomProds();
   applyCatalogOverrides();
   updateSyncStatus();
-  // Auto-conectar Drive si hay Client ID guardado
-  if (driveConfig.clientId) {
-    setTimeout(function(){ driveSignIn(); }, 1500);
-  }
+  // Drive se conecta manualmente con el botón ☁️ Drive (Google requiere gesto del usuario)
   renderCustomProdList();
   resetCustomForm();
   toast('✅ Producto '+(editId?'actualizado':'guardado')+': '+ref,'ok');
