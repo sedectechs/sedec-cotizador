@@ -2162,12 +2162,19 @@ async function uploadImgToDrive(file) {
       body: form
     });
 
-    if (!resp.ok) { toast('Error subiendo imagen: ' + resp.status, 'err'); return; }
-    var result = await resp.json();
+    var respText = await resp.text();
+    if (!resp.ok) { 
+      toast('Error subiendo imagen: ' + resp.status + ' — ' + respText.substring(0,80), 'err'); 
+      console.error('Drive upload error:', resp.status, respText);
+      return; 
+    }
+    var result = JSON.parse(respText);
     var fileId = result.id;
+    console.log('Drive upload OK — fileId:', fileId, 'name:', result.name);
 
     // 2. Hacer la imagen pública (anyone with link can view)
-    await fetch('https://www.googleapis.com/drive/v3/files/' + fileId + '/permissions', {
+    console.log('Setting permissions for fileId:', fileId);
+    var permResp = await fetch('https://www.googleapis.com/drive/v3/files/' + fileId + '/permissions', {
       method: 'POST',
       headers: {
         Authorization: 'Bearer ' + driveToken,
@@ -2175,6 +2182,7 @@ async function uploadImgToDrive(file) {
       },
       body: JSON.stringify({ role: 'reader', type: 'anyone' })
     });
+    console.log('Permissions response:', permResp.status);
 
     // 3. Obtener URL directa para mostrar en img src
     // Google Drive thumbnail URL — funciona sin auth para imágenes públicas
@@ -2182,7 +2190,7 @@ async function uploadImgToDrive(file) {
 
     // 4. Guardar URL (no base64) en imgCache
     setProductImg(imgUrl);
-    toast('☁️ Imagen guardada en Drive — 0 KB locales', 'ok');
+    toast('☁️ Imagen en Drive: ' + (result.name||fileId), 'ok'); console.log('Image URL:', imgUrl);
 
   } catch(err) {
     toast('Error Drive: ' + err.message, 'err');
@@ -2832,6 +2840,18 @@ function exportPDF() {
   win.document.close();
   saveQuoteToHistory();
   toast('✓ PDF generado y guardado en historial','ok');
+  // Auto-upload HTML to Drive as reference
+  if (driveToken) {
+    var cliente = (state.cliente||'Cliente').replace(/[^a-zA-Z0-9áéíóúñÁÉÍÓÚÑ ]/g,'_').slice(0,30);
+    var proyecto = (state.proyecto||'Proyecto').replace(/[^a-zA-Z0-9áéíóúñÁÉÍÓÚÑ ]/g,'_').slice(0,30);
+    var now = new Date();
+    var dateStr = now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0')+'-'+String(now.getDate()).padStart(2,'0');
+    var fileName = 'SEDEC_Cotizacion_'+cliente+'_'+proyecto+'_'+dateStr+'.html';
+    var htmlContent = win.document.documentElement.outerHTML;
+    uploadToDrive(fileName, htmlContent, 'text/html').then(function(ok){
+      if (ok) toast('☁️ Cotización guardada en Drive','ok');
+    });
+  }
 }
 
 // ============================================================
