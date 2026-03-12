@@ -334,6 +334,7 @@ body{-webkit-tap-highlight-color:transparent;-webkit-text-size-adjust:100%}
     <button class="tab" onclick="setTab('historial')">🗂️ Historial</button>
     <button class="tab" onclick="setTab('tecnicos')">👷 Técnicos</button>
     <button class="tab" onclick="setTab('finanzas')">💰 Finanzas</button>
+    <button class="tab" onclick="setTab('proyectos')">🏗️ Proyectos</button>
   </div>
 </div>
 
@@ -634,6 +635,92 @@ body{-webkit-tap-highlight-color:transparent;-webkit-text-size-adjust:100%}
     <div style="display:flex;gap:8px;justify-content:flex-end">
       <button onclick="closeAbonoModal()" style="background:#f1f5f9;border:none;border-radius:8px;padding:8px 16px;font-size:13px;cursor:pointer">Cancelar</button>
       <button onclick="saveAbono()" style="background:#16a34a;color:#fff;border:none;border-radius:8px;padding:8px 18px;font-size:13px;font-weight:700;cursor:pointer">Registrar</button>
+    </div>
+  </div>
+</div>
+
+<!-- TAB: PROYECTOS -->
+<div class="main" id="tab-proyectos" style="display:none">
+  <div style="flex:1;padding:16px;overflow-y:auto;max-width:1100px;margin:0 auto;width:100%">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:8px">
+      <h2 style="color:var(--brand-dark);font-size:16px;margin:0">🏗️ Proyectos</h2>
+      <button onclick="openProyectoModal()" style="background:var(--brand-dark);color:#fff;border:none;border-radius:8px;padding:7px 16px;font-size:12px;font-weight:700;cursor:pointer">+ Nuevo Proyecto</button>
+    </div>
+    <div id="proyectosLista"></div>
+  </div>
+</div>
+
+<!-- Modal: nuevo/editar proyecto -->
+<div class="modal-ov" id="proyectoModal" style="display:none">
+  <div class="modal" style="max-width:460px;width:95%">
+    <h3 id="proyectoModalTitle">🏗️ Nuevo Proyecto</h3>
+    <input type="hidden" id="proyectoEditId">
+    <div class="fl" style="margin-bottom:10px">
+      <label style="font-size:12px;font-weight:700;color:var(--brand-dark)">Nombre del Proyecto</label>
+      <input id="pNombre" placeholder="Ej: Edificio Morasurco" style="width:100%;border:1.5px solid var(--border);border-radius:6px;padding:7px 10px;font-size:13px;box-sizing:border-box">
+    </div>
+    <div class="fl" style="margin-bottom:16px">
+      <label style="font-size:12px;font-weight:700;color:var(--brand-dark)">Cliente</label>
+      <input id="pCliente" placeholder="Nombre del cliente" style="width:100%;border:1.5px solid var(--border);border-radius:6px;padding:7px 10px;font-size:13px;box-sizing:border-box">
+    </div>
+    <div style="display:flex;gap:8px;justify-content:flex-end">
+      <button onclick="closeProyectoModal()" style="background:#f1f5f9;border:none;border-radius:8px;padding:8px 16px;font-size:13px;cursor:pointer">Cancelar</button>
+      <button onclick="saveProyecto()" style="background:var(--brand-dark);color:#fff;border:none;border-radius:8px;padding:8px 18px;font-size:13px;font-weight:700;cursor:pointer">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: nuevo movimiento -->
+<div class="modal-ov" id="movimientoModal" style="display:none">
+  <div class="modal" style="max-width:460px;width:95%">
+    <h3 id="movModalTitle">💸 Nuevo Movimiento</h3>
+    <input type="hidden" id="movProyectoId">
+    <input type="hidden" id="movEditId">
+    <div style="display:flex;gap:0;border-bottom:2px solid var(--border);margin-bottom:14px">
+      <button id="movTab-gasto"   onclick="setMovTab('gasto')"   style="padding:7px 18px;font-size:12px;font-weight:700;border:none;border-bottom:3px solid #dc2626;background:none;color:#dc2626;cursor:pointer">💸 Gasto</button>
+      <button id="movTab-ingreso" onclick="setMovTab('ingreso')" style="padding:7px 18px;font-size:12px;font-weight:700;border:none;border-bottom:3px solid transparent;background:none;color:var(--muted);cursor:pointer">💰 Ingreso</button>
+    </div>
+    <input type="hidden" id="movTipo" value="gasto">
+    <div class="fl" style="margin-bottom:10px">
+      <label style="font-size:12px;font-weight:700;color:var(--brand-dark)">Categoría</label>
+      <select id="movCat" style="width:100%;border:1.5px solid var(--border);border-radius:6px;padding:7px 10px;font-size:13px;box-sizing:border-box"></select>
+    </div>
+    <div class="fl" style="margin-bottom:10px">
+      <label style="font-size:12px;font-weight:700;color:var(--brand-dark)">Descripción</label>
+      <input id="movDesc" placeholder="Detalle del movimiento" style="width:100%;border:1.5px solid var(--border);border-radius:6px;padding:7px 10px;font-size:13px;box-sizing:border-box">
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px">
+      <div class="fl">
+        <label style="font-size:12px;font-weight:700;color:var(--brand-dark)">Valor (COP)</label>
+        <input id="movValor" type="number" placeholder="0" style="width:100%;border:1.5px solid var(--border);border-radius:6px;padding:7px 10px;font-size:13px;box-sizing:border-box">
+      </div>
+      <div class="fl">
+        <label style="font-size:12px;font-weight:700;color:var(--brand-dark)">Fecha</label>
+        <input id="movFecha" type="date" style="width:100%;border:1.5px solid var(--border);border-radius:6px;padding:7px 10px;font-size:13px;box-sizing:border-box">
+      </div>
+    </div>
+    <div style="display:flex;gap:8px;justify-content:flex-end">
+      <button onclick="closeMovimientoModal()" style="background:#f1f5f9;border:none;border-radius:8px;padding:8px 16px;font-size:13px;cursor:pointer">Cancelar</button>
+      <button onclick="saveMovimiento()" style="background:var(--brand-dark);color:#fff;border:none;border-radius:8px;padding:8px 18px;font-size:13px;font-weight:700;cursor:pointer">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: gestionar categorías de proyecto -->
+<div class="modal-ov" id="catProyModal" style="display:none">
+  <div class="modal" style="max-width:420px;width:95%">
+    <h3>⚙️ Categorías</h3>
+    <input type="hidden" id="catProyTipo">
+    <div style="margin-bottom:12px">
+      <div style="font-size:11px;font-weight:700;color:var(--muted);margin-bottom:6px" id="catProyLabel">Categorías de Gastos</div>
+      <div id="catProyLista" style="margin-bottom:10px"></div>
+      <div style="display:flex;gap:6px">
+        <input id="catProyNueva" placeholder="Nueva categoría..." style="flex:1;border:1.5px solid var(--border);border-radius:6px;padding:6px 10px;font-size:12px">
+        <button onclick="addCatProy()" style="background:var(--brand-dark);color:#fff;border:none;border-radius:6px;padding:6px 14px;font-size:12px;cursor:pointer;font-weight:700">+ Agregar</button>
+      </div>
+    </div>
+    <div style="display:flex;justify-content:flex-end">
+      <button onclick="closeCatProyModal()" style="background:#f1f5f9;border:none;border-radius:8px;padding:8px 16px;font-size:13px;cursor:pointer">Cerrar</button>
     </div>
   </div>
 </div>
@@ -2374,10 +2461,10 @@ function renderTecnicos() {
   var panel = document.getElementById('tecnicosPanel');
   if (!panel) return;
 
-  // Recopilar todas las cotizaciones que tienen MO
+  // Recopilar cotizaciones con MO del historial
   var quotes = [];
 
-  // 1. Cotización activa (si tiene MO)
+  // Cotización activa
   var activeMO = [];
   state.categories.forEach(function(cat){
     cat.items.filter(function(i){ return i.moValue>0; }).forEach(function(i){
@@ -2387,10 +2474,10 @@ function renderTecnicos() {
   if (activeMO.length > 0) {
     var proj = (document.getElementById('qProyecto')||{}).value || 'Cotización activa';
     var cli  = (document.getElementById('qCliente')||{}).value  || '—';
-    quotes.push({ id:'(activa)', proyecto: proj, cliente: cli, fecha: new Date().toLocaleDateString('es-CO'), items: activeMO });
+    quotes.push({ id:'(activa)', proyecto:proj, cliente:cli, fecha:new Date().toLocaleDateString('es-CO'), items:activeMO });
   }
 
-  // 2. Historial
+  // Historial
   history_list.forEach(function(q){
     if (!q.categories) return;
     var mo = [];
@@ -2399,7 +2486,7 @@ function renderTecnicos() {
         mo.push(Object.assign({}, i, {catName: cat.name}));
       });
     });
-    if (mo.length > 0) quotes.push({ id: q.id, proyecto: q.proyecto, cliente: q.cliente, fecha: q.fecha, items: mo });
+    if (mo.length > 0) quotes.push({ id:q.id, proyecto:q.proyecto, cliente:q.cliente, fecha:q.fecha, items:mo });
   });
 
   if (quotes.length === 0) {
@@ -2407,10 +2494,9 @@ function renderTecnicos() {
     return;
   }
 
-  // Renderizar cada cotización como bloque separado
-  var html = quotes.map(function(q){
-    var subtotal = q.items.reduce(function(s,i){ return s+i.moValue; }, 0);
-    var rows = q.items.map(function(item, idx){
+  panel.innerHTML = quotes.map(function(q){
+    var subtotal = q.items.reduce(function(s,i){ return s+i.moValue; },0);
+    var rows = q.items.map(function(item,idx){
       return '<tr style="border-bottom:1px solid #f0f4f8">'+
         '<td style="padding:8px 10px;text-align:center;color:#94a3b8;font-size:11px">'+(idx+1)+'</td>'+
         '<td style="padding:8px 10px;font-size:10px;color:var(--muted)">'+item.catName.replace('Sistema de ','').replace('Sistema ','')+'</td>'+
@@ -2424,27 +2510,25 @@ function renderTecnicos() {
       '</tr>';
     }).join('');
 
-    return '<div style="margin-bottom:20px;border-radius:10px;border:1px solid var(--border);overflow:hidden">'+
-      // Header del proyecto
-      '<div style="background:var(--brand-dark);padding:10px 16px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px">'+
+    return '<div style="margin-bottom:18px;border-radius:10px;border:1px solid var(--border);overflow:hidden">'+
+      '<div style="background:var(--brand-dark);padding:10px 16px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">'+
         '<div>'+
           '<span style="font-size:10px;color:#93c5fd;font-weight:700;margin-right:8px">'+q.id+'</span>'+
           '<span style="font-size:13px;color:#fff;font-weight:800">'+q.proyecto+'</span>'+
           '<span style="font-size:11px;color:#94a3b8;margin-left:10px">'+q.cliente+'</span>'+
           '<span style="font-size:10px;color:#64748b;margin-left:8px">· '+q.fecha+'</span>'+
         '</div>'+
-        '<div style="display:flex;gap:6px;align-items:center">'+
-          '<span style="font-size:13px;font-weight:800;color:#fbbf24">'+fmt(subtotal)+'</span>'+
-          '<button onclick="exportTecnicosSingle(\''+q.id+'\')" style="background:#1e3a52;color:#fff;border:1px solid #3b82f6;border-radius:6px;padding:3px 10px;font-size:10px;cursor:pointer;font-weight:700">📄 Exportar</button>'+
+        '<div style="display:flex;gap:8px;align-items:center">'+
+          '<span style="font-size:14px;font-weight:800;color:#fbbf24">'+fmt(subtotal)+'</span>'+
+          '<button onclick="exportTecnicosPDF(\''+q.id+'\')" style="background:#1e3a52;color:#fff;border:1px solid #3b82f6;border-radius:6px;padding:5px 12px;font-size:11px;cursor:pointer;font-weight:700">📄 PDF</button>'+
         '</div>'+
       '</div>'+
-      // Tabla
       '<table style="width:100%;border-collapse:collapse;background:#fff">'+
         '<thead><tr style="background:#f0f4f8">'+
-          '<th style="padding:7px 10px;color:var(--muted);font-size:10px">#</th>'+
-          '<th style="padding:7px 10px;color:var(--muted);font-size:10px;text-align:left">Sistema</th>'+
-          '<th style="padding:7px 10px;color:var(--muted);font-size:10px;text-align:left">Referencia</th>'+
-          '<th style="padding:7px 10px;color:var(--muted);font-size:10px;text-align:left">Descripción</th>'+
+          '<th style="padding:7px 10px;color:var(--muted);font-size:10px;text-align:center">#</th>'+
+          '<th style="padding:7px 10px;color:var(--muted);font-size:10px">Sistema</th>'+
+          '<th style="padding:7px 10px;color:var(--muted);font-size:10px">Referencia</th>'+
+          '<th style="padding:7px 10px;color:var(--muted);font-size:10px">Descripción</th>'+
           '<th style="padding:7px 10px;color:var(--muted);font-size:10px;text-align:center">Cant.</th>'+
           '<th style="padding:7px 10px;color:var(--muted);font-size:10px;text-align:center">Tipo</th>'+
           '<th style="padding:7px 10px;color:var(--muted);font-size:10px;text-align:center">Horas</th>'+
@@ -2459,19 +2543,17 @@ function renderTecnicos() {
       '</table>'+
     '</div>';
   }).join('');
-
-  panel.innerHTML = html;
 }
 
-function exportTecnicosSingle(quoteId) {
-  // Encontrar la cotización
-  var q = null;
-  var items = [];
-
+function exportTecnicosPDF(quoteId) {
+  var q = null, items = [];
   if (quoteId === '(activa)') {
-    var proj = (document.getElementById('qProyecto')||{}).value || 'Cotización activa';
-    var cli  = (document.getElementById('qCliente')||{}).value  || '—';
-    q = { id:'(activa)', proyecto: proj, cliente: cli, fecha: new Date().toLocaleDateString('es-CO') };
+    q = {
+      id: '(activa)',
+      proyecto: (document.getElementById('qProyecto')||{}).value || 'Cotización activa',
+      cliente:  (document.getElementById('qCliente')||{}).value  || '—',
+      fecha:    new Date().toLocaleDateString('es-CO')
+    };
     state.categories.forEach(function(cat){
       cat.items.filter(function(i){ return i.moValue>0; }).forEach(function(i){
         items.push(Object.assign({}, i, {catName: cat.name}));
@@ -2487,58 +2569,70 @@ function exportTecnicosSingle(quoteId) {
       });
     });
   }
-
   if (!items.length) { toast('Sin mano de obra para exportar','err'); return; }
 
-  var total = items.reduce(function(s,i){ return s+i.moValue; }, 0);
+  var total = items.reduce(function(s,i){ return s+i.moValue; },0);
   var rows  = items.map(function(item,idx){
-    return '<tr style="border-bottom:1px solid #e5e7eb">'+
-      '<td style="padding:8px">'+( idx+1)+'</td>'+
-      '<td style="padding:8px;font-size:11px">'+item.catName+'</td>'+
-      '<td style="padding:8px;font-family:monospace;font-size:11px;color:#365979">'+item.ref+'</td>'+
-      '<td style="padding:8px;font-size:11px">'+item.desc+'</td>'+
-      '<td style="padding:8px;text-align:center">'+item.qty+'</td>'+
-      '<td style="padding:8px;text-align:center;font-weight:700">'+item.moType+'</td>'+
-      '<td style="padding:8px;text-align:center">'+item.moHours+'h</td>'+
-      '<td style="padding:8px;text-align:right">'+fmt(item.moRate)+'</td>'+
-      '<td style="padding:8px;text-align:right;font-weight:800">'+fmt(item.moValue)+'</td>'+
+    return '<tr>'+
+      '<td>'+( idx+1)+'</td>'+
+      '<td>'+item.catName+'</td>'+
+      '<td style="font-family:monospace;color:#365979">'+item.ref+'</td>'+
+      '<td>'+item.desc+'</td>'+
+      '<td style="text-align:center">'+item.qty+'</td>'+
+      '<td style="text-align:center;font-weight:700">'+item.moType+'</td>'+
+      '<td style="text-align:center">'+item.moHours+'h</td>'+
+      '<td style="text-align:right">'+fmt(item.moRate)+'</td>'+
+      '<td style="text-align:right;font-weight:800">'+fmt(item.moValue)+'</td>'+
     '</tr>';
   }).join('');
 
-  var w = window.open('','_blank','width=900,height=700');
+  var w = window.open('','_blank','width=960,height=700');
   w.document.write('<!DOCTYPE html><html><head><meta charset="utf-8">'+
     '<title>Orden de Trabajo — '+q.proyecto+'</title>'+
-    '<style>body{font-family:Arial,sans-serif;padding:30px;color:#0f172a}'+
-    'h1{color:#365979;font-size:20px;margin:0}'+
-    'table{width:100%;border-collapse:collapse;margin-top:20px}'+
-    'th{background:#0d1f2e;color:#fff;padding:9px;font-size:11px;text-align:left}'+
-    'tr:nth-child(even){background:#f8fafc}'+
-    '.total{text-align:right;font-size:18px;font-weight:800;color:#0d1f2e;margin-top:10px}'+
-    '@media print{button{display:none}}'+
+    '<style>'+
+      'body{font-family:Arial,sans-serif;padding:28px 32px;color:#0f172a;font-size:13px}'+
+      'h1{color:#0d1f2e;font-size:18px;margin:0 0 4px}'+
+      '.meta{font-size:12px;color:#64748b;margin-bottom:20px}'+
+      'table{width:100%;border-collapse:collapse;margin-top:16px}'+
+      'th{background:#0d1f2e;color:#fff;padding:8px 10px;font-size:11px;text-align:left}'+
+      'td{padding:7px 10px;border-bottom:1px solid #e5e7eb;font-size:12px}'+
+      'tr:nth-child(even) td{background:#f8fafc}'+
+      'tfoot td{background:#f0f4f8;font-weight:800;font-size:14px;padding:10px}'+
+      '.logo{font-size:11px;color:#64748b;text-align:right}'+
+      '@media print{.no-print{display:none}body{padding:16px}}'+
     '</style></head><body>'+
-    '<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:20px">'+
-      '<div><h1>📋 Orden de Trabajo</h1>'+
-        '<div style="margin-top:6px;font-size:13px"><b>Proyecto:</b> '+q.proyecto+'</div>'+
-        '<div style="font-size:13px"><b>Cliente:</b> '+q.cliente+'</div>'+
-        '<div style="font-size:13px"><b>No. Cotización:</b> '+q.id+'</div>'+
-        '<div style="font-size:13px"><b>Fecha:</b> '+q.fecha+'</div>'+
+    '<div style="display:flex;justify-content:space-between;align-items:flex-start">'+
+      '<div>'+
+        '<h1>📋 Orden de Trabajo</h1>'+
+        '<div class="meta">'+
+          '<b>Proyecto:</b> '+q.proyecto+' &nbsp;·&nbsp; '+
+          '<b>Cliente:</b> '+q.cliente+' &nbsp;·&nbsp; '+
+          '<b>No.:</b> '+q.id+' &nbsp;·&nbsp; '+
+          '<b>Fecha:</b> '+q.fecha+
+        '</div>'+
       '</div>'+
-      '<div style="text-align:right">'+
-        '<div style="font-size:11px;color:#64748b">SEDEC TECNOLOGÍAS</div>'+
-        '<button onclick="window.print()" style="margin-top:10px;background:#365979;color:#fff;border:none;border-radius:6px;padding:8px 16px;cursor:pointer;font-size:12px">🖨 Imprimir / PDF</button>'+
+      '<div class="logo">SEDEC TECNOLOGÍAS<br>'+
+        '<button class="no-print" onclick="window.print()" '+
+          'style="margin-top:8px;background:#0d1f2e;color:#fff;border:none;border-radius:6px;padding:7px 16px;cursor:pointer;font-size:12px">'+
+          '🖨 Imprimir / PDF</button>'+
       '</div>'+
     '</div>'+
-    '<table><thead><tr>'+
-      '<th>#</th><th>Sistema</th><th>Referencia</th><th>Descripción</th>'+
-      '<th style="text-align:center">Cant.</th><th style="text-align:center">Tipo</th>'+
-      '<th style="text-align:center">Horas</th><th style="text-align:right">Tarifa</th>'+
-      '<th style="text-align:right">Total MO</th>'+
-    '</tr></thead><tbody>'+rows+'</tbody></table>'+
-    '<div class="total">TOTAL MANO DE OBRA: '+fmt(total)+'</div>'+
+    '<table>'+
+      '<thead><tr>'+
+        '<th>#</th><th>Sistema</th><th>Referencia</th><th>Descripción</th>'+
+        '<th style="text-align:center">Cant.</th><th style="text-align:center">Tipo</th>'+
+        '<th style="text-align:center">Horas</th><th style="text-align:right">Tarifa</th>'+
+        '<th style="text-align:right">Total MO</th>'+
+      '</tr></thead>'+
+      '<tbody>'+rows+'</tbody>'+
+      '<tfoot><tr>'+
+        '<td colspan="8">TOTAL MANO DE OBRA</td>'+
+        '<td style="text-align:right">'+fmt(total)+'</td>'+
+      '</tr></tfoot>'+
+    '</table>'+
     '</body></html>');
   w.document.close();
 }
-
 
 // ============================================================
 // HISTORIAL
@@ -3116,7 +3210,8 @@ function setTab(tab) {
     document.getElementById('tab-'+t).style.display=t===tab?'flex':'none';
   });
   if (tab === 'tecnicos') { populateTecnicoSelector(); renderTecnicos(); }
-  if (tab === 'finanzas') { setFinTab(finTab_active || 'resumen'); }
+  if (tab === 'finanzas')   { setFinTab(finTab_active || 'resumen'); }
+  if (tab === 'proyectos') { renderProyectos(); }
   document.querySelectorAll('.tab').forEach(function(b,i) {
     b.classList.toggle('active',['cotizar','catalogo','historial','tecnicos'][i]===tab);
   });
@@ -4561,6 +4656,7 @@ function buildSyncPackage() {
     device:     navigator.userAgent.indexOf('iPhone') >= 0 ? 'iPhone' : 'PC',
     historial:  history_list || [],
     finanzas:   finanzas_list || [],
+    proyectos:  proyectos_data || [],
     customProducts: CUSTOM_PRODUCTS || [],
     catalogOverrides: CATALOG_OVERRIDES || {},
     config: {
@@ -4605,6 +4701,16 @@ function applySyncPackage(pkg) {
     changed.push(finanzas_list.length + ' facturas');
   } else if (pkg.finanzas && pkg.finanzas.length === 0) {
     // Drive tiene lista vacía - no sobreescribir local
+  }
+
+  // Proyectos
+  if (pkg.proyectos && pkg.proyectos.length > 0) {
+    var mergedProy = {};
+    (proyectos_data||[]).forEach(function(p){ if(p&&p.id) mergedProy[p.id]=p; });
+    pkg.proyectos.forEach(function(p){ if(p&&p.id) mergedProy[p.id]=p; });
+    proyectos_data = Object.values(mergedProy);
+    try { localStorage.setItem('sedec_proyectos_v1', JSON.stringify(proyectos_data)); } catch(e){}
+    changed.push(proyectos_data.length+' proyectos');
   }
 
   // Productos personalizados
@@ -5075,4 +5181,304 @@ function saveAbono() {
   var saldo = getSaldo(f);
   toast(saldo<=0 ? '✅ '+(f.tipo==='pagar'?'Factura pagada completamente':'Cobro registrado completamente') : 'Registrado — saldo: '+fmt(saldo),'ok');
 }
+
+// ============================================================
+// PROYECTOS — Trazabilidad financiera por proyecto
+// ============================================================
+var CAT_GASTOS_DEFAULT   = ['Mano de obra','Mercancía','Programación','Transporte','Herramientas','Otros'];
+var CAT_INGRESOS_DEFAULT = ['Abono cliente','Préstamo','Transferencia otro proyecto','Anticipo','Pago final','Otros'];
+
+var proyectos_data = (function(){
+  try { return JSON.parse(localStorage.getItem('sedec_proyectos_v1')||'[]'); } catch(e){ return []; }
+})();
+var cat_gastos   = (function(){
+  try { return JSON.parse(localStorage.getItem('sedec_cat_gastos_v1')  ||JSON.stringify(CAT_GASTOS_DEFAULT)); } catch(e){ return CAT_GASTOS_DEFAULT.slice(); }
+})();
+var cat_ingresos = (function(){
+  try { return JSON.parse(localStorage.getItem('sedec_cat_ingresos_v1')||JSON.stringify(CAT_INGRESOS_DEFAULT)); } catch(e){ return CAT_INGRESOS_DEFAULT.slice(); }
+})();
+
+function saveProyectosData() {
+  try {
+    localStorage.setItem('sedec_proyectos_v1',   JSON.stringify(proyectos_data));
+    localStorage.setItem('sedec_cat_gastos_v1',  JSON.stringify(cat_gastos));
+    localStorage.setItem('sedec_cat_ingresos_v1',JSON.stringify(cat_ingresos));
+  } catch(e){}
+}
+
+function renderProyectos() {
+  var lista = document.getElementById('proyectosLista');
+  if (!lista) return;
+
+  if (!proyectos_data.length) {
+    lista.innerHTML = '<div style="text-align:center;padding:40px;color:var(--muted)"><div style="font-size:36px;opacity:.3">🏗️</div><div style="margin-top:8px">No hay proyectos. Crea uno con el botón +</div></div>';
+    return;
+  }
+
+  lista.innerHTML = proyectos_data.map(function(p, pi) {
+    var gastos   = (p.movimientos||[]).filter(function(m){ return m.tipo==='gasto'; });
+    var ingresos = (p.movimientos||[]).filter(function(m){ return m.tipo==='ingreso'; });
+    var totGasto = gastos.reduce(function(s,m){   return s+m.valor; },0);
+    var totIngreso = ingresos.reduce(function(s,m){ return s+m.valor; },0);
+    var saldo    = totIngreso - totGasto;
+    var expanded = p.expanded || false;
+
+    // Agrupar gastos por categoría
+    var grpGastos = {};
+    gastos.forEach(function(m){ grpGastos[m.cat] = (grpGastos[m.cat]||0)+m.valor; });
+    var grpIngr = {};
+    ingresos.forEach(function(m){ grpIngr[m.cat] = (grpIngr[m.cat]||0)+m.valor; });
+
+    var movHTML = !expanded ? '' :
+      '<div style="padding:0 16px 16px">'+
+        // Resumen por categoría
+        '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px">'+
+          '<div style="background:#fef2f2;border-radius:8px;padding:12px">'+
+            '<div style="font-size:11px;font-weight:700;color:#dc2626;margin-bottom:6px">💸 GASTOS por categoría</div>'+
+            Object.keys(grpGastos).map(function(c){
+              return '<div style="display:flex;justify-content:space-between;font-size:11px;padding:2px 0;border-bottom:1px solid #fee2e2">'+
+                '<span>'+c+'</span><span style="font-weight:700">'+fmt(grpGastos[c])+'</span></div>';
+            }).join('')+
+            (Object.keys(grpGastos).length===0 ? '<div style="font-size:11px;color:#94a3b8">Sin gastos</div>' : '')+
+          '</div>'+
+          '<div style="background:#f0fdf4;border-radius:8px;padding:12px">'+
+            '<div style="font-size:11px;font-weight:700;color:#16a34a;margin-bottom:6px">💰 INGRESOS por categoría</div>'+
+            Object.keys(grpIngr).map(function(c){
+              return '<div style="display:flex;justify-content:space-between;font-size:11px;padding:2px 0;border-bottom:1px solid #dcfce7">'+
+                '<span>'+c+'</span><span style="font-weight:700">'+fmt(grpIngr[c])+'</span></div>';
+            }).join('')+
+            (Object.keys(grpIngr).length===0 ? '<div style="font-size:11px;color:#94a3b8">Sin ingresos</div>' : '')+
+          '</div>'+
+        '</div>'+
+        // Lista de movimientos
+        '<div style="font-size:11px;font-weight:700;color:var(--muted);margin-bottom:6px">Movimientos</div>'+
+        (p.movimientos||[]).length===0
+          ? '<div style="font-size:12px;color:var(--muted)">Sin movimientos aún.</div>'
+          : '<div style="border:1px solid var(--border);border-radius:8px;overflow:hidden">'+
+              (p.movimientos||[]).slice().reverse().map(function(m,mi){
+                var realIdx = (p.movimientos.length-1) - mi;
+                return '<div style="display:flex;align-items:center;gap:8px;padding:7px 12px;border-bottom:1px solid #f0f4f8;background:'+(m.tipo==='gasto'?'#fef9f9':'#f9fffe')+'">'+
+                  '<span style="font-size:16px">'+(m.tipo==='gasto'?'💸':'💰')+'</span>'+
+                  '<div style="flex:1;min-width:0">'+
+                    '<div style="font-size:12px;font-weight:700;color:var(--brand-dark)">'+m.cat+' — '+m.desc+'</div>'+
+                    '<div style="font-size:10px;color:var(--muted)">'+m.fecha+'</div>'+
+                  '</div>'+
+                  '<span style="font-size:13px;font-weight:800;color:'+(m.tipo==='gasto'?'#dc2626':'#16a34a')+'">'+(m.tipo==='gasto'?'-':'+')+fmt(m.valor)+'</span>'+
+                  '<button onclick="deleteMovimiento('+pi+','+realIdx+')" style="background:none;border:none;color:#fca5a5;cursor:pointer;font-size:14px;padding:2px 4px">🗑</button>'+
+                '</div>';
+              }).join('')+
+            '</div>'+
+        // Acciones
+        '<div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap">'+
+          '<button onclick="openMovimientoModal('+pi+',\'gasto\')" style="background:#fef2f2;color:#dc2626;border:1.5px solid #fca5a5;border-radius:6px;padding:5px 14px;font-size:11px;font-weight:700;cursor:pointer">💸 + Gasto</button>'+
+          '<button onclick="openMovimientoModal('+pi+',\'ingreso\')" style="background:#f0fdf4;color:#16a34a;border:1.5px solid #86efac;border-radius:6px;padding:5px 14px;font-size:11px;font-weight:700;cursor:pointer">💰 + Ingreso</button>'+
+          '<button onclick="openCatProyModal(\'gasto\')" style="background:#f8fafc;color:var(--muted);border:1.5px solid var(--border);border-radius:6px;padding:5px 12px;font-size:11px;cursor:pointer">⚙️ Cats Gastos</button>'+
+          '<button onclick="openCatProyModal(\'ingreso\')" style="background:#f8fafc;color:var(--muted);border:1.5px solid var(--border);border-radius:6px;padding:5px 12px;font-size:11px;cursor:pointer">⚙️ Cats Ingresos</button>'+
+          '<button onclick="exportProyectoPDF('+pi+')" style="background:#eff6ff;color:#3b82f6;border:1.5px solid #93c5fd;border-radius:6px;padding:5px 12px;font-size:11px;font-weight:700;cursor:pointer">📄 PDF</button>'+
+          '<button onclick="deleteProyecto('+pi+')" style="background:#fef2f2;color:#dc2626;border:1.5px solid #fca5a5;border-radius:6px;padding:5px 10px;font-size:11px;cursor:pointer">🗑 Eliminar</button>'+
+        '</div>'+
+      '</div>';
+
+    return '<div style="background:#fff;border-radius:12px;border:1px solid var(--border);margin-bottom:12px;overflow:hidden">'+
+      // Header proyecto
+      '<div onclick="toggleProyecto('+pi+')" style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px;cursor:pointer;flex-wrap:wrap;gap:8px;background:'+(expanded?'#f8fafc':'#fff')+'">'+
+        '<div style="display:flex;align-items:center;gap:10px">'+
+          '<span style="font-size:18px">'+(expanded?'🔽':'▶️')+'</span>'+
+          '<div>'+
+            '<div style="font-size:14px;font-weight:800;color:var(--brand-dark)">'+p.nombre+'</div>'+
+            '<div style="font-size:11px;color:var(--muted)">'+p.cliente+' · '+(p.movimientos||[]).length+' movimientos</div>'+
+          '</div>'+
+        '</div>'+
+        '<div style="display:flex;gap:16px;align-items:center;flex-wrap:wrap">'+
+          '<div style="text-align:right">'+
+            '<div style="font-size:10px;color:#dc2626;font-weight:700">GASTOS</div>'+
+            '<div style="font-size:13px;font-weight:800;color:#dc2626">'+fmt(totGasto)+'</div>'+
+          '</div>'+
+          '<div style="text-align:right">'+
+            '<div style="font-size:10px;color:#16a34a;font-weight:700">INGRESOS</div>'+
+            '<div style="font-size:13px;font-weight:800;color:#16a34a">'+fmt(totIngreso)+'</div>'+
+          '</div>'+
+          '<div style="text-align:right;min-width:90px">'+
+            '<div style="font-size:10px;color:var(--muted);font-weight:700">SALDO</div>'+
+            '<div style="font-size:15px;font-weight:800;color:'+(saldo>=0?'#16a34a':'#dc2626')+'">'+fmt(saldo)+'</div>'+
+          '</div>'+
+        '</div>'+
+      '</div>'+
+      movHTML+
+    '</div>';
+  }).join('');
+}
+
+function toggleProyecto(pi) {
+  proyectos_data[pi].expanded = !proyectos_data[pi].expanded;
+  renderProyectos();
+}
+
+function openProyectoModal() {
+  document.getElementById('proyectoEditId').value = '';
+  document.getElementById('proyectoModalTitle').textContent = '🏗️ Nuevo Proyecto';
+  document.getElementById('pNombre').value = '';
+  document.getElementById('pCliente').value = '';
+  document.getElementById('proyectoModal').style.display = 'flex';
+}
+function closeProyectoModal() { document.getElementById('proyectoModal').style.display='none'; }
+
+function saveProyecto() {
+  var nombre  = document.getElementById('pNombre').value.trim();
+  var cliente = document.getElementById('pCliente').value.trim();
+  if (!nombre) { toast('Ingresa el nombre del proyecto','err'); return; }
+  proyectos_data.unshift({ id:'P-'+Date.now().toString().slice(-8), nombre:nombre, cliente:cliente||'—', movimientos:[], expanded:true });
+  saveProyectosData();
+  closeProyectoModal();
+  renderProyectos();
+  toast('Proyecto creado','ok');
+}
+
+function deleteProyecto(pi) {
+  if (!confirm('¿Eliminar proyecto "'+proyectos_data[pi].nombre+'" y todos sus movimientos?')) return;
+  proyectos_data.splice(pi,1);
+  saveProyectosData();
+  renderProyectos();
+  toast('Proyecto eliminado','ok');
+}
+
+var movTab_active = 'gasto';
+function setMovTab(tipo) {
+  movTab_active = tipo;
+  document.getElementById('movTipo').value = tipo;
+  ['gasto','ingreso'].forEach(function(t){
+    var btn = document.getElementById('movTab-'+t);
+    if (!btn) return;
+    var active = t===tipo;
+    btn.style.borderBottomColor = active ? (t==='gasto'?'#dc2626':'#16a34a') : 'transparent';
+    btn.style.color = active ? (t==='gasto'?'#dc2626':'#16a34a') : 'var(--muted)';
+  });
+  // Actualizar categorías
+  var sel = document.getElementById('movCat');
+  var cats = tipo==='gasto' ? cat_gastos : cat_ingresos;
+  sel.innerHTML = cats.map(function(c){ return '<option value="'+c+'">'+c+'</option>'; }).join('');
+}
+
+function openMovimientoModal(pi, tipo) {
+  document.getElementById('movProyectoId').value = pi;
+  document.getElementById('movEditId').value = '';
+  document.getElementById('movModalTitle').textContent = tipo==='gasto' ? '💸 Nuevo Gasto' : '💰 Nuevo Ingreso';
+  document.getElementById('movDesc').value = '';
+  document.getElementById('movValor').value = '';
+  document.getElementById('movFecha').value = new Date().toISOString().split('T')[0];
+  setMovTab(tipo);
+  document.getElementById('movimientoModal').style.display = 'flex';
+}
+function closeMovimientoModal() { document.getElementById('movimientoModal').style.display='none'; }
+
+function saveMovimiento() {
+  var pi    = parseInt(document.getElementById('movProyectoId').value);
+  var tipo  = document.getElementById('movTipo').value;
+  var cat   = document.getElementById('movCat').value;
+  var desc  = document.getElementById('movDesc').value.trim();
+  var valor = parseFloat(document.getElementById('movValor').value)||0;
+  var fecha = document.getElementById('movFecha').value;
+  if (!valor||valor<=0) { toast('Ingresa un valor válido','err'); return; }
+  var fechaFmt = fecha ? new Date(fecha+'T00:00:00').toLocaleDateString('es-CO') : new Date().toLocaleDateString('es-CO');
+  if (!proyectos_data[pi].movimientos) proyectos_data[pi].movimientos = [];
+  proyectos_data[pi].movimientos.push({ id:'M-'+Date.now().toString().slice(-8), tipo:tipo, cat:cat, desc:desc||cat, valor:valor, fecha:fechaFmt });
+  saveProyectosData();
+  closeMovimientoModal();
+  renderProyectos();
+  toast((tipo==='gasto'?'💸 Gasto':'💰 Ingreso')+' registrado','ok');
+}
+
+function deleteMovimiento(pi, mi) {
+  if (!confirm('¿Eliminar este movimiento?')) return;
+  proyectos_data[pi].movimientos.splice(mi,1);
+  saveProyectosData();
+  renderProyectos();
+}
+
+function openCatProyModal(tipo) {
+  document.getElementById('catProyTipo').value = tipo;
+  document.getElementById('catProyLabel').textContent = tipo==='gasto' ? 'Categorías de Gastos' : 'Categorías de Ingresos';
+  renderCatProyLista(tipo);
+  document.getElementById('catProyModal').style.display = 'flex';
+}
+function closeCatProyModal() { document.getElementById('catProyModal').style.display='none'; }
+
+function renderCatProyLista(tipo) {
+  var cats = tipo==='gasto' ? cat_gastos : cat_ingresos;
+  var defaults = tipo==='gasto' ? CAT_GASTOS_DEFAULT : CAT_INGRESOS_DEFAULT;
+  document.getElementById('catProyLista').innerHTML = cats.map(function(c,i){
+    var isDefault = defaults.indexOf(c)>=0;
+    return '<div style="display:flex;align-items:center;justify-content:space-between;padding:5px 0;border-bottom:1px solid #f0f4f8">'+
+      '<span style="font-size:12px">'+c+(isDefault?'':' <span style="font-size:9px;color:#7c3aed;font-weight:700">CUSTOM</span>')+'</span>'+
+      (!isDefault ? '<button onclick="deleteCatProy(\"'+tipo+'\",'+i+')" style="background:none;border:none;color:#fca5a5;cursor:pointer;font-size:14px">🗑</button>' : '<span style="font-size:10px;color:#94a3b8">base</span>')+
+    '</div>';
+  }).join('');
+}
+
+function addCatProy() {
+  var tipo  = document.getElementById('catProyTipo').value;
+  var nueva = document.getElementById('catProyNueva').value.trim();
+  if (!nueva) return;
+  if (tipo==='gasto') { cat_gastos.push(nueva); } else { cat_ingresos.push(nueva); }
+  saveProyectosData();
+  document.getElementById('catProyNueva').value = '';
+  renderCatProyLista(tipo);
+  toast('Categoría agregada','ok');
+}
+
+function deleteCatProy(tipo, i) {
+  if (tipo==='gasto') { cat_gastos.splice(i,1); } else { cat_ingresos.splice(i,1); }
+  saveProyectosData();
+  renderCatProyLista(tipo);
+}
+
+function exportProyectoPDF(pi) {
+  var p = proyectos_data[pi];
+  if (!p) return;
+  var gastos   = (p.movimientos||[]).filter(function(m){ return m.tipo==='gasto'; });
+  var ingresos = (p.movimientos||[]).filter(function(m){ return m.tipo==='ingreso'; });
+  var totG = gastos.reduce(function(s,m){   return s+m.valor; },0);
+  var totI = ingresos.reduce(function(s,m){ return s+m.valor; },0);
+  var saldo = totI - totG;
+
+  var allMovs = (p.movimientos||[]).slice().reverse();
+  var rows = allMovs.map(function(m){
+    return '<tr>'+
+      '<td>'+(m.tipo==='gasto'?'💸 Gasto':'💰 Ingreso')+'</td>'+
+      '<td>'+m.cat+'</td><td>'+m.desc+'</td><td>'+m.fecha+'</td>'+
+      '<td style="text-align:right;font-weight:700;color:'+(m.tipo==='gasto'?'#dc2626':'#16a34a')+'">'+(m.tipo==='gasto'?'-':'+')+fmt(m.valor)+'</td>'+
+    '</tr>';
+  }).join('');
+
+  var w = window.open('','_blank','width=900,height=700');
+  w.document.write('<!DOCTYPE html><html><head><meta charset="utf-8">'+
+    '<title>Proyecto — '+p.nombre+'</title>'+
+    '<style>body{font-family:Arial,sans-serif;padding:28px 32px;color:#0f172a;font-size:13px}'+
+    'h1{color:#0d1f2e;font-size:18px;margin:0 0 4px}'+
+    '.resumen{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:16px 0}'+
+    '.card{border-radius:8px;padding:12px;text-align:center}'+
+    'table{width:100%;border-collapse:collapse;margin-top:16px}'+
+    'th{background:#0d1f2e;color:#fff;padding:8px 10px;font-size:11px;text-align:left}'+
+    'td{padding:7px 10px;border-bottom:1px solid #e5e7eb;font-size:12px}'+
+    'tr:nth-child(even) td{background:#f8fafc}'+
+    '@media print{.no-print{display:none}}</style></head><body>'+
+    '<div style="display:flex;justify-content:space-between;align-items:flex-start">'+
+      '<div><h1>🏗️ '+p.nombre+'</h1>'+
+        '<div style="font-size:12px;color:#64748b"><b>Cliente:</b> '+p.cliente+' &nbsp;·&nbsp; <b>Fecha:</b> '+new Date().toLocaleDateString('es-CO')+'</div>'+
+      '</div>'+
+      '<div style="text-align:right;font-size:11px;color:#64748b">SEDEC TECNOLOGÍAS<br>'+
+        '<button class="no-print" onclick="window.print()" style="margin-top:8px;background:#0d1f2e;color:#fff;border:none;border-radius:6px;padding:7px 16px;cursor:pointer;font-size:12px">🖨 Imprimir / PDF</button>'+
+      '</div>'+
+    '</div>'+
+    '<div class="resumen">'+
+      '<div class="card" style="background:#fef2f2;border:1px solid #fca5a5"><div style="font-size:11px;color:#dc2626;font-weight:700">TOTAL GASTOS</div><div style="font-size:22px;font-weight:800;color:#dc2626">'+fmt(totG)+'</div></div>'+
+      '<div class="card" style="background:#f0fdf4;border:1px solid #86efac"><div style="font-size:11px;color:#16a34a;font-weight:700">TOTAL INGRESOS</div><div style="font-size:22px;font-weight:800;color:#16a34a">'+fmt(totI)+'</div></div>'+
+      '<div class="card" style="background:'+(saldo>=0?'#f0fdf4':'#fef2f2')+';border:1px solid '+(saldo>=0?'#86efac':'#fca5a5')+'"><div style="font-size:11px;color:'+(saldo>=0?'#16a34a':'#dc2626')+';font-weight:700">SALDO</div><div style="font-size:22px;font-weight:800;color:'+(saldo>=0?'#16a34a':'#dc2626')+'">'+fmt(saldo)+'</div></div>'+
+    '</div>'+
+    '<table><thead><tr><th>Tipo</th><th>Categoría</th><th>Descripción</th><th>Fecha</th><th style="text-align:right">Valor</th></tr></thead>'+
+    '<tbody>'+rows+'</tbody></table>'+
+    '</body></html>');
+  w.document.close();
+}
+
 </script>
