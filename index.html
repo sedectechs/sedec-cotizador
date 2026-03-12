@@ -548,14 +548,7 @@ body{-webkit-tap-highlight-color:transparent;-webkit-text-size-adjust:100%}
         <button class="btn btn-o btn-sm" onclick="exportTecnicos()" style="color:var(--warn);border-color:var(--warn)">📄 Exportar Orden de Trabajo</button>
       </div>
     </div>
-    <!-- Selector de proyecto -->
-    <div style="background:#fff;border-radius:8px;border:1px solid var(--border);padding:12px 16px;margin-bottom:12px;display:flex;align-items:center;gap:12px;flex-wrap:wrap">
-      <label style="font-size:12px;font-weight:700;color:var(--brand-dark);white-space:nowrap">📋 Proyecto:</label>
-      <select id="tecnicoProjectSel" onchange="renderTecnicos()" style="flex:1;min-width:200px;border:1.5px solid var(--border);border-radius:6px;padding:6px 10px;font-size:12px;color:var(--text);background:#f8fafc">
-        <option value="__active__">— Cotización activa —</option>
-      </select>
-      <div id="tecnicoProjectInfo" style="font-size:11px;color:var(--muted)"></div>
-    </div>
+
     <div id="tecnicosPanel" style="background:#fff;border-radius:8px;border:1px solid var(--border);padding:16px"></div>
   </div>
 </div>
@@ -2291,105 +2284,175 @@ function editCatItem(ref) {
 // ============================================================
 // TECNICOS PANEL
 // ============================================================
-function populateTecnicoSelector() {
-  var sel = document.getElementById('tecnicoProjectSel');
-  if (!sel) return;
-  var current = sel.value;
-  // Rebuild options
-  sel.innerHTML = '<option value="__active__">— Cotización activa —</option>';
-  history_list.forEach(function(q) {
-    if (!q.categories || !q.categories.length) return;
-    var hasMO = q.categories.some(function(c){ return c.items.some(function(i){ return i.moValue>0; }); });
-    if (!hasMO) return;
-    var opt = document.createElement('option');
-    opt.value = q.id;
-    opt.textContent = q.id + ' · ' + q.proyecto + ' — ' + q.cliente;
-    sel.appendChild(opt);
-  });
-  // Restore selection if still valid
-  if (current && Array.from(sel.options).some(function(o){ return o.value===current; })) {
-    sel.value = current;
-  }
-}
-
 function renderTecnicos() {
   var panel = document.getElementById('tecnicosPanel');
-  var info  = document.getElementById('tecnicoProjectInfo');
-  var sel   = document.getElementById('tecnicoProjectSel');
   if (!panel) return;
 
-  populateTecnicoSelector();
+  // Recopilar todas las cotizaciones que tienen MO
+  var quotes = [];
 
-  var selVal = sel ? sel.value : '__active__';
-  var cats, proyecto, cliente, fecha;
-
-  if (selVal === '__active__') {
-    // Cotización activa en el cotizador
-    cats     = state.categories;
-    proyecto = document.getElementById('qProyecto') ? document.getElementById('qProyecto').value || 'Sin nombre' : 'Sin nombre';
-    cliente  = document.getElementById('qCliente')  ? document.getElementById('qCliente').value  || '—' : '—';
-    fecha    = new Date().toLocaleDateString('es-CO');
-  } else {
-    // Cotización del historial
-    var q = history_list.find(function(x){ return x.id === selVal; });
-    if (!q) { panel.innerHTML = '<div style="text-align:center;color:var(--muted);padding:30px">Cotización no encontrada</div>'; return; }
-    cats     = q.categories;
-    proyecto = q.proyecto;
-    cliente  = q.cliente;
-    fecha    = q.fecha;
-  }
-
-  // Mostrar info del proyecto
-  if (info) info.innerHTML = proyecto !== 'Sin nombre'
-    ? '<span style="font-weight:700;color:var(--brand-dark)">'+proyecto+'</span> &nbsp;·&nbsp; '+cliente+' &nbsp;·&nbsp; '+fecha
-    : '';
-
-  // Recopilar MO
-  var allMO = [];
-  (cats||[]).forEach(function(cat){
-    cat.items.filter(function(i){ return i.moValue > 0; }).forEach(function(i){
-      allMO.push(Object.assign({}, i, {catName: cat.name}));
+  // 1. Cotización activa (si tiene MO)
+  var activeMO = [];
+  state.categories.forEach(function(cat){
+    cat.items.filter(function(i){ return i.moValue>0; }).forEach(function(i){
+      activeMO.push(Object.assign({}, i, {catName: cat.name}));
     });
   });
+  if (activeMO.length > 0) {
+    var proj = (document.getElementById('qProyecto')||{}).value || 'Cotización activa';
+    var cli  = (document.getElementById('qCliente')||{}).value  || '—';
+    quotes.push({ id:'(activa)', proyecto: proj, cliente: cli, fecha: new Date().toLocaleDateString('es-CO'), items: activeMO });
+  }
 
-  if (allMO.length === 0) {
-    panel.innerHTML = '<div style="text-align:center;color:var(--muted);padding:30px"><div style="font-size:34px;opacity:.3">👷</div><div style="margin-top:6px">Este proyecto no tiene mano de obra registrada.</div></div>';
+  // 2. Historial
+  history_list.forEach(function(q){
+    if (!q.categories) return;
+    var mo = [];
+    q.categories.forEach(function(cat){
+      (cat.items||[]).filter(function(i){ return i.moValue>0; }).forEach(function(i){
+        mo.push(Object.assign({}, i, {catName: cat.name}));
+      });
+    });
+    if (mo.length > 0) quotes.push({ id: q.id, proyecto: q.proyecto, cliente: q.cliente, fecha: q.fecha, items: mo });
+  });
+
+  if (quotes.length === 0) {
+    panel.innerHTML = '<div style="text-align:center;color:var(--muted);padding:40px"><div style="font-size:36px;opacity:.3">👷</div><div style="margin-top:8px">No hay mano de obra registrada en ninguna cotización.</div></div>';
     return;
   }
 
-  var moTotal = allMO.reduce(function(s,i){ return s + i.moValue; }, 0);
-  var rows = allMO.map(function(item, i){
-    return '<tr style="border-bottom:1px solid #f0f0f0">'+
-      '<td style="padding:9px;text-align:center;color:#94a3b8">'+(i+1)+'</td>'+
-      '<td style="padding:9px;font-size:10px;color:var(--muted)">'+item.catName.replace('Sistema de ','').replace('Sistema ','')+'</td>'+
-      '<td style="padding:9px;font-family:monospace;font-size:10px;color:var(--brand);font-weight:700">'+(item.custom?'<span style="background:#7c3aed;color:#fff;font-size:8px;font-weight:800;border-radius:3px;padding:1px 4px;margin-right:3px">MÍO</span>':'')+item.ref+'</td>'+
-      '<td style="padding:9px;font-size:11px">'+item.desc+'</td>'+
-      '<td style="padding:9px;text-align:center">'+item.qty+'</td>'+
-      '<td style="padding:9px;text-align:center;font-weight:700;color:var(--brand)">'+item.moType+'</td>'+
-      '<td style="padding:9px;text-align:center">'+item.moHours+'h</td>'+
-      '<td style="padding:9px;text-align:right;color:var(--muted);font-size:11px">'+fmt(item.moRate)+'</td>'+
-      '<td style="padding:9px;text-align:right;font-weight:800;color:var(--brand-dark)">'+fmt(item.moValue)+'</td></tr>';
+  // Renderizar cada cotización como bloque separado
+  var html = quotes.map(function(q){
+    var subtotal = q.items.reduce(function(s,i){ return s+i.moValue; }, 0);
+    var rows = q.items.map(function(item, idx){
+      return '<tr style="border-bottom:1px solid #f0f4f8">'+
+        '<td style="padding:8px 10px;text-align:center;color:#94a3b8;font-size:11px">'+(idx+1)+'</td>'+
+        '<td style="padding:8px 10px;font-size:10px;color:var(--muted)">'+item.catName.replace('Sistema de ','').replace('Sistema ','')+'</td>'+
+        '<td style="padding:8px 10px;font-family:monospace;font-size:10px;color:var(--brand);font-weight:700">'+item.ref+'</td>'+
+        '<td style="padding:8px 10px;font-size:11px">'+item.desc+'</td>'+
+        '<td style="padding:8px 10px;text-align:center;font-size:11px">'+item.qty+'</td>'+
+        '<td style="padding:8px 10px;text-align:center;font-weight:700;color:var(--brand);font-size:11px">'+item.moType+'</td>'+
+        '<td style="padding:8px 10px;text-align:center;font-size:11px">'+item.moHours+'h</td>'+
+        '<td style="padding:8px 10px;text-align:right;color:var(--muted);font-size:11px">'+fmt(item.moRate)+'</td>'+
+        '<td style="padding:8px 10px;text-align:right;font-weight:800;color:var(--brand-dark)">'+fmt(item.moValue)+'</td>'+
+      '</tr>';
+    }).join('');
+
+    return '<div style="margin-bottom:20px;border-radius:10px;border:1px solid var(--border);overflow:hidden">'+
+      // Header del proyecto
+      '<div style="background:var(--brand-dark);padding:10px 16px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px">'+
+        '<div>'+
+          '<span style="font-size:10px;color:#93c5fd;font-weight:700;margin-right:8px">'+q.id+'</span>'+
+          '<span style="font-size:13px;color:#fff;font-weight:800">'+q.proyecto+'</span>'+
+          '<span style="font-size:11px;color:#94a3b8;margin-left:10px">'+q.cliente+'</span>'+
+          '<span style="font-size:10px;color:#64748b;margin-left:8px">· '+q.fecha+'</span>'+
+        '</div>'+
+        '<div style="display:flex;gap:6px;align-items:center">'+
+          '<span style="font-size:13px;font-weight:800;color:#fbbf24">'+fmt(subtotal)+'</span>'+
+          '<button onclick="exportTecnicosSingle(\''+q.id+'\')" style="background:#1e3a52;color:#fff;border:1px solid #3b82f6;border-radius:6px;padding:3px 10px;font-size:10px;cursor:pointer;font-weight:700">📄 Exportar</button>'+
+        '</div>'+
+      '</div>'+
+      // Tabla
+      '<table style="width:100%;border-collapse:collapse;background:#fff">'+
+        '<thead><tr style="background:#f0f4f8">'+
+          '<th style="padding:7px 10px;color:var(--muted);font-size:10px">#</th>'+
+          '<th style="padding:7px 10px;color:var(--muted);font-size:10px;text-align:left">Sistema</th>'+
+          '<th style="padding:7px 10px;color:var(--muted);font-size:10px;text-align:left">Referencia</th>'+
+          '<th style="padding:7px 10px;color:var(--muted);font-size:10px;text-align:left">Descripción</th>'+
+          '<th style="padding:7px 10px;color:var(--muted);font-size:10px;text-align:center">Cant.</th>'+
+          '<th style="padding:7px 10px;color:var(--muted);font-size:10px;text-align:center">Tipo</th>'+
+          '<th style="padding:7px 10px;color:var(--muted);font-size:10px;text-align:center">Horas</th>'+
+          '<th style="padding:7px 10px;color:var(--muted);font-size:10px;text-align:right">Tarifa</th>'+
+          '<th style="padding:7px 10px;color:var(--muted);font-size:10px;text-align:right">Total MO</th>'+
+        '</tr></thead>'+
+        '<tbody>'+rows+'</tbody>'+
+        '<tfoot><tr style="background:#f8fafc">'+
+          '<td colspan="8" style="padding:9px 10px;font-weight:700;font-size:12px;color:var(--brand-dark)">Subtotal MO</td>'+
+          '<td style="padding:9px 10px;text-align:right;font-size:15px;font-weight:800;color:var(--brand-dark)">'+fmt(subtotal)+'</td>'+
+        '</tr></tfoot>'+
+      '</table>'+
+    '</div>';
   }).join('');
 
-  panel.innerHTML =
-    '<table style="width:100%;border-collapse:collapse">'+
-    '<thead><tr style="background:var(--brand-dark)">'+
-      '<th style="padding:9px;color:#fff;font-size:10px">#</th>'+
-      '<th style="padding:9px;color:#fff;font-size:10px">Sistema</th>'+
-      '<th style="padding:9px;color:#fff;font-size:10px">Referencia</th>'+
-      '<th style="padding:9px;color:#fff;font-size:10px">Descripción</th>'+
-      '<th style="padding:9px;color:#fff;font-size:10px;text-align:center">Cant.</th>'+
-      '<th style="padding:9px;color:#fff;font-size:10px;text-align:center">Tipo</th>'+
-      '<th style="padding:9px;color:#fff;font-size:10px;text-align:center">Horas</th>'+
-      '<th style="padding:9px;color:#fff;font-size:10px;text-align:right">Tarifa</th>'+
-      '<th style="padding:9px;color:#fff;font-size:10px;text-align:right">Total MO</th>'+
-    '</tr></thead>'+
-    '<tbody>'+rows+'</tbody>'+
-    '<tfoot><tr style="background:#f0f4f8">'+
-      '<td colspan="8" style="padding:10px;font-weight:700;color:var(--brand-dark)">TOTAL</td>'+
-      '<td style="padding:10px;text-align:right;font-size:18px;font-weight:800;color:var(--brand-dark)">'+fmt(moTotal)+'</td>'+
-    '</tr></tfoot></table>';
+  panel.innerHTML = html;
 }
+
+function exportTecnicosSingle(quoteId) {
+  // Encontrar la cotización
+  var q = null;
+  var items = [];
+
+  if (quoteId === '(activa)') {
+    var proj = (document.getElementById('qProyecto')||{}).value || 'Cotización activa';
+    var cli  = (document.getElementById('qCliente')||{}).value  || '—';
+    q = { id:'(activa)', proyecto: proj, cliente: cli, fecha: new Date().toLocaleDateString('es-CO') };
+    state.categories.forEach(function(cat){
+      cat.items.filter(function(i){ return i.moValue>0; }).forEach(function(i){
+        items.push(Object.assign({}, i, {catName: cat.name}));
+      });
+    });
+  } else {
+    var hq = history_list.find(function(x){ return x.id===quoteId; });
+    if (!hq) return;
+    q = hq;
+    (hq.categories||[]).forEach(function(cat){
+      (cat.items||[]).filter(function(i){ return i.moValue>0; }).forEach(function(i){
+        items.push(Object.assign({}, i, {catName: cat.name}));
+      });
+    });
+  }
+
+  if (!items.length) { toast('Sin mano de obra para exportar','err'); return; }
+
+  var total = items.reduce(function(s,i){ return s+i.moValue; }, 0);
+  var rows  = items.map(function(item,idx){
+    return '<tr style="border-bottom:1px solid #e5e7eb">'+
+      '<td style="padding:8px">'+( idx+1)+'</td>'+
+      '<td style="padding:8px;font-size:11px">'+item.catName+'</td>'+
+      '<td style="padding:8px;font-family:monospace;font-size:11px;color:#365979">'+item.ref+'</td>'+
+      '<td style="padding:8px;font-size:11px">'+item.desc+'</td>'+
+      '<td style="padding:8px;text-align:center">'+item.qty+'</td>'+
+      '<td style="padding:8px;text-align:center;font-weight:700">'+item.moType+'</td>'+
+      '<td style="padding:8px;text-align:center">'+item.moHours+'h</td>'+
+      '<td style="padding:8px;text-align:right">'+fmt(item.moRate)+'</td>'+
+      '<td style="padding:8px;text-align:right;font-weight:800">'+fmt(item.moValue)+'</td>'+
+    '</tr>';
+  }).join('');
+
+  var w = window.open('','_blank','width=900,height=700');
+  w.document.write('<!DOCTYPE html><html><head><meta charset="utf-8">'+
+    '<title>Orden de Trabajo — '+q.proyecto+'</title>'+
+    '<style>body{font-family:Arial,sans-serif;padding:30px;color:#0f172a}'+
+    'h1{color:#365979;font-size:20px;margin:0}'+
+    'table{width:100%;border-collapse:collapse;margin-top:20px}'+
+    'th{background:#0d1f2e;color:#fff;padding:9px;font-size:11px;text-align:left}'+
+    'tr:nth-child(even){background:#f8fafc}'+
+    '.total{text-align:right;font-size:18px;font-weight:800;color:#0d1f2e;margin-top:10px}'+
+    '@media print{button{display:none}}'+
+    '</style></head><body>'+
+    '<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:20px">'+
+      '<div><h1>📋 Orden de Trabajo</h1>'+
+        '<div style="margin-top:6px;font-size:13px"><b>Proyecto:</b> '+q.proyecto+'</div>'+
+        '<div style="font-size:13px"><b>Cliente:</b> '+q.cliente+'</div>'+
+        '<div style="font-size:13px"><b>No. Cotización:</b> '+q.id+'</div>'+
+        '<div style="font-size:13px"><b>Fecha:</b> '+q.fecha+'</div>'+
+      '</div>'+
+      '<div style="text-align:right">'+
+        '<div style="font-size:11px;color:#64748b">SEDEC TECNOLOGÍAS</div>'+
+        '<button onclick="window.print()" style="margin-top:10px;background:#365979;color:#fff;border:none;border-radius:6px;padding:8px 16px;cursor:pointer;font-size:12px">🖨 Imprimir / PDF</button>'+
+      '</div>'+
+    '</div>'+
+    '<table><thead><tr>'+
+      '<th>#</th><th>Sistema</th><th>Referencia</th><th>Descripción</th>'+
+      '<th style="text-align:center">Cant.</th><th style="text-align:center">Tipo</th>'+
+      '<th style="text-align:center">Horas</th><th style="text-align:right">Tarifa</th>'+
+      '<th style="text-align:right">Total MO</th>'+
+    '</tr></thead><tbody>'+rows+'</tbody></table>'+
+    '<div class="total">TOTAL MANO DE OBRA: '+fmt(total)+'</div>'+
+    '</body></html>');
+  w.document.close();
+}
+
 
 // ============================================================
 // HISTORIAL
