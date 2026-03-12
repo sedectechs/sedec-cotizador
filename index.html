@@ -1837,6 +1837,7 @@ function saveImgs() { try { localStorage.setItem('sedec_imgs_v1',JSON.stringify(
 // item = { id, ref, desc, precio, qty, margin, moType, moHours, moRate, moValue, venta, img }
 var state = {
   catalog: CATALOG_BASE.concat(CUSTOM_PRODUCTS.map(function(p){return Object.assign({},p,{custom:true});})),
+  currentQuoteId: null, // ID de la cotización activa (para sobrescribir)
   categories: [],       // active categories in this quote
   activeCatId: null,    // currently selected category
   selectedProduct: null,
@@ -2463,39 +2464,73 @@ function renderTecnicos() {
 // HISTORIAL
 // ============================================================
 function saveQuoteToHistory() {
-  var noCot='Q-'+Date.now().toString().slice(-8);
-  var totVenta=state.categories.reduce(function(s,c){return s+c.items.reduce(function(ss,i){return ss+i.venta;},0)+c.fletes.reduce(function(ss,f){return ss+f.valor;},0);},0);
-  if (totVenta===0) return noCot;
-  // Deep clone categories WITHOUT images (imgCache stores them separately)
+  var proyecto = document.getElementById('qProyecto').value||'Sin nombre';
+  var cliente  = document.getElementById('qCliente').value||'—';
+  var ciudad   = document.getElementById('qCiudad').value||'—';
+  var tipoCliente = document.getElementById('qTipoCliente').value||'0.28';
+
+  var totVenta = state.categories.reduce(function(s,c){
+    return s + c.items.reduce(function(ss,i){return ss+i.venta;},0)
+              + c.fletes.reduce(function(ss,f){return ss+f.valor;},0);
+  }, 0);
+  if (totVenta === 0) return null;
+
   var catSnap = state.categories.map(function(cat){
     return {
       id: cat.id, name: cat.name, fletes: cat.fletes.slice(),
       items: cat.items.map(function(item){
         var c={}; for(var k in item) c[k]=item[k];
-        c.img=null; // strip — recovered from imgCache on load
+        c.img=null;
         return c;
       })
     };
   });
-  history_list.unshift({
-    id:noCot,
-    proyecto:document.getElementById('qProyecto').value||'Sin nombre',
-    cliente:document.getElementById('qCliente').value||'—',
-    ciudad:document.getElementById('qCiudad').value||'—',
-    tipoCliente:document.getElementById('qTipoCliente').value||'0.28',
-    fecha:new Date().toLocaleDateString('es-CO'),
-    total:totVenta,
-    items:state.categories.reduce(function(s,c){return s+c.items.length;},0),
-    status:'pendiente',
-    categories: catSnap
-  });
-  if (history_list.length>100) history_list=history_list.slice(0,100);
+
+  // Buscar si ya existe una cotización activa (mismo proyecto+cliente)
+  var existing = null;
+  if (state.currentQuoteId) {
+    existing = history_list.find(function(q){ return q.id === state.currentQuoteId; });
+  }
+  if (!existing) {
+    // Buscar por proyecto+cliente en las últimas 5 cotizaciones
+    existing = history_list.slice(0,5).find(function(q){
+      return q.proyecto === proyecto && q.cliente === cliente;
+    });
+  }
+
+  if (existing) {
+    // Sobrescribir cotización existente
+    existing.proyecto    = proyecto;
+    existing.cliente     = cliente;
+    existing.ciudad      = ciudad;
+    existing.tipoCliente = tipoCliente;
+    existing.fecha       = new Date().toLocaleDateString('es-CO');
+    existing.updatedAt   = new Date().toISOString();
+    existing.total       = totVenta;
+    existing.items       = state.categories.reduce(function(s,c){return s+c.items.length;},0);
+    existing.categories  = catSnap;
+    state.currentQuoteId = existing.id;
+  } else {
+    // Nueva cotización
+    var noCot = 'Q-' + Date.now().toString().slice(-8);
+    history_list.unshift({
+      id: noCot,
+      proyecto: proyecto, cliente: cliente, ciudad: ciudad,
+      tipoCliente: tipoCliente,
+      fecha: new Date().toLocaleDateString('es-CO'),
+      updatedAt: new Date().toISOString(),
+      total: totVenta,
+      items: state.categories.reduce(function(s,c){return s+c.items.length;},0),
+      status: 'pendiente',
+      categories: catSnap
+    });
+    state.currentQuoteId = noCot;
+  }
+
+  if (history_list.length > 100) history_list = history_list.slice(0,100);
   saveHistory();
   renderHistorial();
-  return noCot;
-
-  // Auto-push a Drive si está conectado
-  if (driveToken) { setTimeout(function(){ syncPush(); }, 500); }
+  return state.currentQuoteId;
 }
 var STATUS_OPTS = [
   {val:'pendiente',   label:'⏳ Pendiente',    cls:'status-pendiente'},
@@ -4425,39 +4460,4 @@ function resetCatalogEdit() {
   if (!confirm('¿Restaurar el producto "'+origRef+'" a sus valores originales del catálogo?')) return;
 
   delete CATALOG_OVERRIDES[origRef];
-  saveCatalogOverrides();
-
-  // Restaurar desde CATALOG_RAW
-  var original = CATALOG_RAW.find(function(p){ return p.ref === origRef; });
-  if (original) {
-    state.catalog.forEach(function(p) {
-      if (p._origRef === origRef || p.ref === origRef) {
-        p.ref = original.ref; p.desc = original.desc; p.precio = original.precio;
-        delete p._origRef;
-      }
-    });
-    CATALOG_BASE.forEach(function(p) {
-      if (p._origRef === origRef || p.ref === origRef) {
-        p.ref = original.ref; p.desc = original.desc; p.precio = original.precio;
-        delete p._origRef;
-      }
-    });
-  }
-  renderCatalogTab(document.getElementById('catSearch').value, state.catPage||0);
-  closeCatalogEditModal();
-  toast('Producto restaurado: '+origRef,'ok');
-}
-
-// Aplicar overrides al cargar
-function applyCatalogOverrides() {
-  Object.keys(CATALOG_OVERRIDES).forEach(function(origRef) {
-    var ov = CATALOG_OVERRIDES[origRef];
-    CATALOG_BASE.forEach(function(p) {
-      if (p.ref === origRef) {
-        p._origRef = origRef;
-        p.ref = ov.ref; p.desc = ov.desc; p.precio = ov.precio;
-      }
-    });
-  });
-  buildCatalog();
-}
+  saveCatal
