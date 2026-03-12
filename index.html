@@ -2457,6 +2457,7 @@ function editCatItem(ref) {
 // ============================================================
 // TECNICOS PANEL
 // ============================================================
+function populateTecnicoSelector() {}
 function renderTecnicos() {
   var panel = document.getElementById('tecnicosPanel');
   if (!panel) return;
@@ -3206,8 +3207,8 @@ function exportTecnicos() {
 // TAB SWITCHING
 // ============================================================
 function setTab(tab) {
-  ['cotizar','catalogo','historial','tecnicos','finanzas'].forEach(function(t) {
-    document.getElementById('tab-'+t).style.display=t===tab?'flex':'none';
+  ['cotizar','catalogo','historial','tecnicos','finanzas','proyectos'].forEach(function(t) {
+    var el=document.getElementById('tab-'+t); if(el) el.style.display=t===tab?'flex':'none';
   });
   if (tab === 'tecnicos') { populateTecnicoSelector(); renderTecnicos(); }
   if (tab === 'finanzas')   { setFinTab(finTab_active || 'resumen'); }
