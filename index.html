@@ -4560,6 +4560,7 @@ function buildSyncPackage() {
     updatedAt:  new Date().toISOString(),
     device:     navigator.userAgent.indexOf('iPhone') >= 0 ? 'iPhone' : 'PC',
     historial:  history_list || [],
+    finanzas:   finanzas_list || [],
     customProducts: CUSTOM_PRODUCTS || [],
     catalogOverrides: CATALOG_OVERRIDES || {},
     config: {
@@ -4591,6 +4592,19 @@ function applySyncPackage(pkg) {
     history_list = Object.values(merged).sort(function(a,b){ return (b.updatedAt||'').localeCompare(a.updatedAt||''); });
     localStorage.setItem('sedec_history_v1', JSON.stringify(history_list));
     changed.push(history_list.length + ' cotizaciones');
+  }
+
+  // Finanzas
+  if (pkg.finanzas && pkg.finanzas.length > 0) {
+    // Merge por id, más reciente gana
+    var mergedFin = {};
+    (finanzas_list||[]).forEach(function(f){ mergedFin[f.id] = f; });
+    pkg.finanzas.forEach(function(f){
+      if (!mergedFin[f.id]) mergedFin[f.id] = f;
+    });
+    finanzas_list = Object.values(mergedFin);
+    localStorage.setItem('sedec_finanzas_v1', JSON.stringify(finanzas_list));
+    changed.push(finanzas_list.length + ' facturas');
   }
 
   // Productos personalizados
@@ -4731,6 +4745,7 @@ async function syncPull() {
 
     // Refrescar UI
     if (typeof renderHistoryTab === 'function') renderHistoryTab();
+    if (typeof renderFinanzas === 'function') renderFinanzas();
     
     toast('✅ Datos recibidos: ' + changed.join(', '), 'ok');
   } catch(e) {
