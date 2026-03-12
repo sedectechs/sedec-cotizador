@@ -3116,7 +3116,7 @@ function setTab(tab) {
     document.getElementById('tab-'+t).style.display=t===tab?'flex':'none';
   });
   if (tab === 'tecnicos') { populateTecnicoSelector(); renderTecnicos(); }
-  if (tab === 'finanzas') { renderFinanzas(); }
+  if (tab === 'finanzas') { setFinTab(finTab_active || 'resumen'); }
   document.querySelectorAll('.tab').forEach(function(b,i) {
     b.classList.toggle('active',['cotizar','catalogo','historial','tecnicos'][i]===tab);
   });
@@ -4596,15 +4596,15 @@ function applySyncPackage(pkg) {
 
   // Finanzas
   if (pkg.finanzas && pkg.finanzas.length > 0) {
-    // Merge por id, más reciente gana
+    // Merge por id — Drive gana sobre local si existe conflicto
     var mergedFin = {};
-    (finanzas_list||[]).forEach(function(f){ mergedFin[f.id] = f; });
-    pkg.finanzas.forEach(function(f){
-      if (!mergedFin[f.id]) mergedFin[f.id] = f;
-    });
+    (finanzas_list||[]).forEach(function(f){ if(f && f.id) mergedFin[f.id] = f; });
+    pkg.finanzas.forEach(function(f){ if(f && f.id) mergedFin[f.id] = f; });
     finanzas_list = Object.values(mergedFin);
-    localStorage.setItem('sedec_finanzas_v1', JSON.stringify(finanzas_list));
+    try { localStorage.setItem('sedec_finanzas_v1', JSON.stringify(finanzas_list)); } catch(e){}
     changed.push(finanzas_list.length + ' facturas');
+  } else if (pkg.finanzas && pkg.finanzas.length === 0) {
+    // Drive tiene lista vacía - no sobreescribir local
   }
 
   // Productos personalizados
@@ -4745,7 +4745,8 @@ async function syncPull() {
 
     // Refrescar UI
     if (typeof renderHistoryTab === 'function') renderHistoryTab();
-    if (typeof renderFinanzas === 'function') renderFinanzas();
+    // Refrescar finanzas - forzar re-render completo
+    if (typeof setFinTab === 'function') { setFinTab('resumen'); }
     
     toast('✅ Datos recibidos: ' + changed.join(', '), 'ok');
   } catch(e) {
