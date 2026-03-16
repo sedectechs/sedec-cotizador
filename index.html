@@ -4953,139 +4953,65 @@ function getSaldo(f) {
 }
 
 function renderFinanzas() {
-  var cont = document.getElementById('finanzasContenido');
-  if (!cont) return;
+  var panel = document.getElementById('finanzasPanel');
+  if (!panel) return;
+  var tipo  = finTab_active === 'pagar' ? 'pagar' : 'cobrar';
+  var lista = finanzas_list.filter(function(f){ return f.tipo === tipo; });
 
-  var porPagar  = finanzas_list.filter(function(f){ return f.tipo==='pagar'  && getSaldo(f)>0; });
-  var porCobrar = finanzas_list.filter(function(f){ return f.tipo==='cobrar' && getSaldo(f)>0; });
-  var totalPagar  = porPagar.reduce(function(s,f){  return s+getSaldo(f); },0);
-  var totalCobrar = porCobrar.reduce(function(s,f){ return s+getSaldo(f); },0);
-  var balance     = totalCobrar - totalPagar;
+  if (!lista.length) {
+    panel.innerHTML = '<div style="text-align:center;padding:40px;color:var(--muted)"><div style="font-size:36px;opacity:.3">'+(tipo==='pagar'?'📤':'📥')+'</div><div style="margin-top:8px">No hay registros. Agrega uno con el botón +</div></div>';
+    return;
+  }
 
-  if (finTab_active === 'resumen') {
-    // Alertas urgentes
-    var urgentes = finanzas_list.filter(function(f){
-      if (getSaldo(f) <= 0) return false;
-      var dias = getDiasRestantes(f.vence);
-      return f.tipo==='pagar' ? dias<=7 : dias<0;
-    });
-    var alertasHTML = urgentes.length > 0
-      ? '<div style="background:#fffbeb;border:1.5px solid #fcd34d;border-radius:10px;padding:12px 16px;margin-bottom:16px">' +
-          '<div style="font-size:12px;font-weight:800;color:#92400e;margin-bottom:8px">⚠️ Requieren atención inmediata</div>' +
-          urgentes.map(function(f){
-            var dias = getDiasRestantes(f.vence);
-            var tipo = f.tipo==='pagar'?'📤':'📥';
-            var msg  = f.tipo==='pagar'
-              ? (dias<0 ? 'Vencida hace '+Math.abs(dias)+' día(s)' : 'Vence en '+dias+' día(s)')
-              : (dias<0 ? 'Cliente debe pagar — '+Math.abs(dias)+' día(s) vencida' : '');
-            return '<div style="display:flex;justify-content:space-between;font-size:12px;padding:4px 0;border-bottom:1px solid #fef3c7">' +
-              '<span>'+tipo+' <b>'+f.nombre+'</b> · '+f.desc+'</span>' +
-              '<span style="font-weight:800;color:#dc2626">'+fmt(getSaldo(f))+' · '+msg+'</span></div>';
-          }).join('') +
-        '</div>'
-      : '';
+  panel.innerHTML = lista.map(function(f) {
+    var saldo   = getSaldo(f);
+    var pagada  = saldo <= 0;
+    var pct     = Math.min(100, Math.round(((f.valor - saldo) / f.valor) * 100)) || 0;
+    var sem     = tipo==='pagar' ? getSemaforoPagar(f) : getSemaforoCobrar(f);
+    var semColor = sem==='🟢' ? '#16a34a' : sem==='🟡' ? '#ca8a04' : '#dc2626';
+    var semLabel = sem==='🟢' ? (tipo==='pagar'?'Al día':'En plazo') : sem==='🟡' ? (tipo==='pagar'?'Próx. vencer':'Vencida reciente') : (tipo==='pagar'?'Vencida':'URGENTE COBRAR');
+    var abHTML  = (f.abonos||[]).map(function(a){
+      return '<div style="display:flex;justify-content:space-between;font-size:10px;padding:2px 0;border-bottom:1px solid #f0f4f8">' +
+        '<span style="color:var(--muted)">' + a.fecha + ' — ' + (a.nota||'Abono') + '</span>' +
+        '<span style="font-weight:700;color:#16a34a">+' + fmt(a.valor) + '</span>' +
+      '</div>';
+    }).join('');
 
-    cont.innerHTML =
-      alertasHTML +
-      '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px;margin-bottom:20px">' +
-        // Por pagar
-        '<div style="background:#fff;border-radius:12px;border:2px solid #fca5a5;padding:18px;cursor:pointer" onclick="setFinTab(\'pagar\')">' +
-          '<div style="font-size:11px;font-weight:700;color:var(--muted);margin-bottom:6px">📤 POR PAGAR</div>' +
-          '<div style="font-size:26px;font-weight:800;color:#dc2626">'+fmt(totalPagar)+'</div>' +
-          '<div style="font-size:11px;color:var(--muted);margin-top:4px">'+porPagar.length+' factura(s) pendiente(s)</div>' +
-          '<div style="font-size:10px;color:#3b82f6;margin-top:6px;font-weight:700">Ver detalle →</div>' +
+    var fid = f.id; // capture for onclick
+
+    return '<div style="background:#fff;border-radius:10px;border:1px solid var(--border);margin-bottom:10px;overflow:hidden">' +
+      '<div style="padding:12px 14px;display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:8px">' +
+        '<div style="flex:1;min-width:200px">' +
+          '<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">' +
+            '<span style="font-size:11px;font-weight:700;padding:2px 8px;border-radius:20px;background:' + semColor + '20;color:' + semColor + '">' + sem + ' ' + semLabel + '</span>' +
+            (pagada ? '<span style="font-size:10px;font-weight:700;background:#dcfce7;color:#16a34a;padding:2px 8px;border-radius:20px">✅ ' + (tipo==='pagar'?'PAGADA':'COBRADA') + '</span>' : '') +
+          '</div>' +
+          '<div style="font-size:13px;font-weight:800;color:var(--brand-dark)">' + f.nombre + '</div>' +
+          '<div style="font-size:11px;color:var(--muted)">' + (f.desc||'') + '</div>' +
+          (f.vencimiento ? '<div style="font-size:10px;color:var(--muted);margin-top:2px">Vence: ' + f.vencimiento + '</div>' : '') +
         '</div>' +
-        // Por cobrar
-        '<div style="background:#fff;border-radius:12px;border:2px solid #86efac;padding:18px;cursor:pointer" onclick="setFinTab(\'cobrar\')">' +
-          '<div style="font-size:11px;font-weight:700;color:var(--muted);margin-bottom:6px">📥 POR COBRAR</div>' +
-          '<div style="font-size:26px;font-weight:800;color:#16a34a">'+fmt(totalCobrar)+'</div>' +
-          '<div style="font-size:11px;color:var(--muted);margin-top:4px">'+porCobrar.length+' factura(s) pendiente(s)</div>' +
-          '<div style="font-size:10px;color:#3b82f6;margin-top:6px;font-weight:700">Ver detalle →</div>' +
-        '</div>' +
-        // Balance
-        '<div style="background:#fff;border-radius:12px;border:2px solid '+(balance>=0?'#86efac':'#fca5a5')+';padding:18px">' +
-          '<div style="font-size:11px;font-weight:700;color:var(--muted);margin-bottom:6px">⚖️ BALANCE NETO</div>' +
-          '<div style="font-size:26px;font-weight:800;color:'+(balance>=0?'#16a34a':'#dc2626')+'">'+fmt(balance)+'</div>' +
-          '<div style="font-size:11px;color:var(--muted);margin-top:4px">'+(balance>=0?'Saldo positivo ✅':'Debes más de lo que te deben ⚠️')+'</div>' +
+        '<div style="text-align:right">' +
+          '<div style="font-size:10px;color:var(--muted)">Total</div>' +
+          '<div style="font-size:16px;font-weight:800;color:var(--brand-dark)">' + fmt(f.valor) + '</div>' +
+          '<div style="font-size:11px;color:' + (saldo>0?'#dc2626':'#16a34a') + ';font-weight:700">Saldo: ' + fmt(saldo) + '</div>' +
         '</div>' +
       '</div>' +
-      // Botones agregar en resumen
-      '<div style="display:flex;gap:10px;flex-wrap:wrap">' +
-        '<button onclick="openFacturaModal(\'pagar\')" style="background:var(--accent);color:#fff;border:none;border-radius:8px;padding:9px 18px;font-size:12px;font-weight:700;cursor:pointer">📤 + Nueva factura por pagar</button>' +
-        '<button onclick="openFacturaModal(\'cobrar\')" style="background:#16a34a;color:#fff;border:none;border-radius:8px;padding:9px 18px;font-size:12px;font-weight:700;cursor:pointer">📥 + Nueva factura por cobrar</button>' +
-      '</div>';
-    return;
-  }
-
-  // Vista Por Pagar o Por Cobrar
-  var items = finanzas_list.filter(function(f){ return f.tipo===finTab_active; });
-  var getSem = finTab_active==='pagar' ? getSemaforoPagar : getSemaforoCobrar;
-  var accentColor = finTab_active==='pagar' ? '#dc2626' : '#16a34a';
-
-  if (items.length === 0) {
-    cont.innerHTML = '<div style="text-align:center;padding:40px;color:var(--muted)">' +
-      '<div style="font-size:36px;opacity:.3">'+(finTab_active==='pagar'?'📤':'📥')+'</div>' +
-      '<div style="margin-top:8px;font-size:13px">No hay facturas '+(finTab_active==='pagar'?'por pagar':'por cobrar')+'.</div></div>';
-    return;
-  }
-
-  // Ordenar por días restantes (más urgentes primero)
-  items.sort(function(a,b){ return getDiasRestantes(a.vence)-getDiasRestantes(b.vence); });
-
-  // Subtotal de pendientes
-  var subtotal = items.reduce(function(s,f){ return s+getSaldo(f); },0);
-  var subtotalHTML = '<div style="background:#f8fafc;border-radius:8px;padding:10px 16px;margin-bottom:14px;display:flex;justify-content:space-between;align-items:center">' +
-    '<span style="font-size:12px;font-weight:700;color:var(--muted)">'+(finTab_active==='pagar'?'Total por pagar':'Total por cobrar')+'</span>' +
-    '<span style="font-size:18px;font-weight:800;color:'+accentColor+'">'+fmt(subtotal)+'</span></div>';
-
-  cont.innerHTML = subtotalHTML + items.map(function(f) {
-    var dias   = getDiasRestantes(f.vence);
-    var sem    = getSem(dias);
-    var pagado = (f.abonos||[]).reduce(function(s,a){ return s+a.valor; },0);
-    var saldo  = getSaldo(f);
-    var pagada = saldo <= 0;
-    var pct    = Math.min(100, Math.round(pagado/f.valor*100));
-
-    var abonosHTML = (f.abonos||[]).length > 0
-      ? '<div style="margin-top:8px;padding-top:8px;border-top:1px solid #f0f4f8">' +
-          (f.abonos||[]).map(function(a,ai){
-            return '<div style="display:flex;justify-content:space-between;font-size:11px;color:var(--muted);padding:2px 0">' +
-              '<span>Abono '+(ai+1)+' · '+a.fecha+'</span>' +
-              '<span style="font-weight:700;color:#16a34a">+'+fmt(a.valor)+'</span></div>';
-          }).join('')+'</div>'
-      : '';
-
-    return '<div style="background:#fff;border-radius:10px;border:1.5px solid '+(pagada?'#86efac':sem.color)+';margin-bottom:10px;overflow:hidden;opacity:'+(pagada?'.55':'1')+'">' +
-      '<div style="height:4px;background:'+(pagada?'#16a34a':sem.color)+';width:'+pct+'%"></div>' +
-      '<div style="padding:12px 16px">' +
-        '<div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:8px">' +
-          '<div style="flex:1;min-width:200px">' +
-            '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:4px">' +
-              '<span style="font-size:10px;font-weight:700;color:var(--muted);background:#f8fafc;border-radius:4px;padding:2px 6px">'+f.nro+'</span>' +
-              '<span style="font-size:13px;font-weight:800;color:var(--brand-dark)">'+f.nombre+'</span>' +
-              (pagada
-                ? '<span style="background:#dcfce7;color:#16a34a;font-size:10px;font-weight:800;border-radius:4px;padding:2px 8px">✅ '+(finTab_active==='pagar'?'PAGADA':'COBRADA')+'</span>'
-                : '<span style="background:'+sem.bg+';color:'+sem.color+';font-size:10px;font-weight:700;border-radius:4px;padding:2px 8px">'+sem.icon+' '+sem.label+'</span>') +
-            '</div>' +
-            '<div style="font-size:11px;color:var(--muted)">'+f.desc+'</div>' +
-            abonosHTML +
-          '</div>' +
-          '<div style="text-align:right;min-width:140px">' +
-            '<div style="font-size:11px;color:var(--muted)">Total: <b style="color:var(--brand-dark)">'+fmt(f.valor)+'</b></div>' +
-            '<div style="font-size:11px;color:var(--muted)">'+(finTab_active==='pagar'?'Pagado':'Cobrado')+': <b style="color:#16a34a">'+fmt(pagado)+'</b></div>' +
-            '<div style="font-size:18px;font-weight:800;color:'+(pagada?'#16a34a':sem.color)+'">'+fmt(saldo)+'</div>' +
-            '<div style="font-size:10px;color:var(--muted)">saldo pendiente</div>' +
-          '</div>' +
+      // Barra progreso
+      '<div style="padding:0 14px 8px">' +
+        '<div style="background:#f0f4f8;border-radius:4px;height:6px;overflow:hidden">' +
+          '<div style="background:#16a34a;height:6px;width:' + pct + '%;transition:width .3s"></div>' +
         '</div>' +
-        '<div style="background:#f0f4f8;border-radius:4px;height:6px;margin-top:10px;overflow:hidden">' +
-          '<div style="height:6px;background:#16a34a;width:'+pct+'%;border-radius:4px"></div></div>' +
-        '<div style="font-size:10px;color:var(--muted);margin-top:3px">'+pct+'% '+(finTab_active==='pagar'?'pagado':'cobrado')+'</div>' +
-        '<div style="display:flex;gap:6px;margin-top:10px;flex-wrap:wrap">' +
-          (!pagada ? '<button onclick="openAbonoModal(\\"'+f.id+'\\")" style="background:#f0fdf4;color:#16a34a;border:1.5px solid #86efac;border-radius:6px;padding:4px 12px;font-size:11px;font-weight:700;cursor:pointer">💵 '+(finTab_active==='pagar'?'Abonar':'Registrar cobro')+'</button>' : '') +
-          '<button onclick="editFactura(\\"'+f.id+'\\")" style="background:#eff6ff;color:#3b82f6;border:1.5px solid #93c5fd;border-radius:6px;padding:4px 12px;font-size:11px;font-weight:700;cursor:pointer">✏️ Editar</button>' +
-          '<button onclick="deleteFactura(\\"'+f.id+'\\")" style="background:#fef2f2;color:#dc2626;border:1.5px solid #fca5a5;border-radius:6px;padding:4px 10px;font-size:11px;font-weight:700;cursor:pointer">🗑</button>' +
-        '</div>' +
-      '</div></div>';
+        '<div style="font-size:10px;color:var(--muted);margin-top:3px">' + pct + '% ' + (tipo==='pagar'?'pagado':'cobrado') + '</div>' +
+      '</div>' +
+      // Abonos
+      (f.abonos && f.abonos.length ? '<div style="padding:0 14px 8px">' + abHTML + '</div>' : '') +
+      // Botones — IDs embebidos con + para concatenación segura
+      '<div style="padding:8px 14px 12px;display:flex;gap:6px;flex-wrap:wrap">' +
+        (!pagada ? '<button onclick="openAbonoModal(\'' + fid + '\')" style="background:#f0fdf4;color:#16a34a;border:1.5px solid #86efac;border-radius:6px;padding:4px 12px;font-size:11px;font-weight:700;cursor:pointer">💵 ' + (tipo==='pagar'?'Abonar':'Registrar cobro') + '</button>' : '') +
+        '<button onclick="editFactura(\'' + fid + '\')" style="background:#eff6ff;color:#3b82f6;border:1.5px solid #93c5fd;border-radius:6px;padding:4px 12px;font-size:11px;font-weight:700;cursor:pointer">✏️ Editar</button>' +
+        '<button onclick="deleteFactura(\'' + fid + '\')" style="background:#fef2f2;color:#dc2626;border:1.5px solid #fca5a5;border-radius:6px;padding:4px 12px;font-size:11px;cursor:pointer">🗑</button>' +
+      '</div>' +
+    '</div>';
   }).join('');
 }
 
