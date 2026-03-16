@@ -577,6 +577,21 @@ body{-webkit-tap-highlight-color:transparent;-webkit-text-size-adjust:100%}
     </div>
 
     <!-- Contenido dinámico -->
+    <div id="finOrdenBar" style="display:none;gap:6px;align-items:center;margin-bottom:10px;flex-wrap:wrap">
+      <span style="font-size:11px;color:var(--muted);font-weight:700">Ordenar:</span>
+      <button id="finOrden-fecha_asc" onclick="setFinOrden('fecha_asc')"
+        style="background:var(--brand-dark);color:#fff;border:none;border-radius:6px;padding:4px 12px;font-size:11px;font-weight:800;cursor:pointer">
+        🕐 Reciente
+      </button>
+      <button id="finOrden-vence_asc" onclick="setFinOrden('vence_asc')"
+        style="background:#f1f5f9;color:var(--muted);border:none;border-radius:6px;padding:4px 12px;font-size:11px;font-weight:600;cursor:pointer">
+        📅 Próx. vencer
+      </button>
+      <button id="finOrden-saldo_desc" onclick="setFinOrden('saldo_desc')"
+        style="background:#f1f5f9;color:var(--muted);border:none;border-radius:6px;padding:4px 12px;font-size:11px;font-weight:600;cursor:pointer">
+        💰 Mayor saldo
+      </button>
+    </div>
     <div id="finanzasContenido"></div>
   </div>
 </div>
@@ -1114,23 +1129,7 @@ body{-webkit-tap-highlight-color:transparent;-webkit-text-size-adjust:100%}
     <div class="fl" style="margin-bottom:10px">
       <label style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;display:block;margin-bottom:3px">Valor en letras</label>
       <input type="text" id="bValLetras" placeholder="Ej: cinco millones de pesos" style="width:100%;border:1.5px solid var(--border);border-radius:6px;padding:6px 9px;font-size:12px;outline:none">
-    </div>
-    <div class="fl" style="margin-bottom:12px">
-      <label style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;display:block;margin-bottom:3px">Datos de pago (banco, cuenta, etc.)</label>
-      <textarea id="bPago" rows="2" placeholder="Bancolombia Ahorros 123-456789-00 / Nequi 300..." style="width:100%;border:1.5px solid var(--border);border-radius:6px;padding:6px 9px;font-size:11px;font-family:inherit;resize:none;outline:none">Bancolombia Cuenta de Ahorros No. 123-456789-00
-Nequi: 3XX XXX XXXX — A nombre de Juan Sebastián Cerón Ortega</textarea>
-    </div>
-    <div style="display:flex;gap:8px;justify-content:flex-end">
-      <button class="btn btn-o btn-sm" onclick="document.getElementById('billingModal').style.display='none'">Cancelar</button>
-      <button class="btn btn-b" onclick="generateBillingDocument()">📥 Descargar documento</button>
-    </div>
-  </div>
-</div>
-
-<div class="toast" id="toast"></div>
-
-
-<script>
+    </div
 
 
 // ============================================================
@@ -4905,6 +4904,7 @@ function updateSyncStatus() {
 var finanzas_list = (function(){
   try { return JSON.parse(localStorage.getItem('sedec_finanzas_v1')||'[]'); } catch(e){ return []; }
 })();
+var finOrden = 'fecha_asc';
 var finTab_active = 'resumen';
 
 function saveFinanzas() {
@@ -4923,8 +4923,11 @@ function setFinTab(tab) {
     btn.style.fontWeight = active ? '800' : '700';
   });
   // Mostrar botones agregar solo en sub-tabs
-  var addBtns = document.getElementById('finAddBtns');
-  if (addBtns) addBtns.style.display = tab==='resumen' ? 'none' : 'flex';
+  var addBtns  = document.getElementById('finAddBtns');
+  var ordenBar = document.getElementById('finOrdenBar');
+  if (addBtns)  addBtns.style.display  = tab==='resumen' ? 'none' : 'flex';
+  if (ordenBar) ordenBar.style.display = tab==='resumen' ? 'none' : 'flex';
+  if (tab !== 'resumen') setFinOrden(finOrden); // refrescar estado visual botones
   renderFinanzas();
 }
 
@@ -4950,6 +4953,30 @@ function getSemaforoCobrar(dias) {
 
 function getSaldo(f) {
   return f.valor - (f.abonos||[]).reduce(function(s,a){ return s+a.valor; },0);
+}
+
+function setFinOrden(orden) {
+  finOrden = orden;
+  ['fecha_asc','vence_asc','saldo_desc'].forEach(function(o) {
+    var btn = document.getElementById('finOrden-'+o);
+    if (!btn) return;
+    btn.style.background = o===orden ? 'var(--brand-dark)' : '#f1f5f9';
+    btn.style.color      = o===orden ? '#fff' : 'var(--muted)';
+    btn.style.fontWeight = o===orden ? '800' : '600';
+  });
+  renderFinanzas();
+}
+
+function sortFinanzas(lista) {
+  var sorted = lista.slice();
+  if (finOrden === 'fecha_asc') {
+    sorted.sort(function(a,b){ return a.id < b.id ? 1 : -1; });
+  } else if (finOrden === 'vence_asc') {
+    sorted.sort(function(a,b){ return diasHasta(a.vence) - diasHasta(b.vence); });
+  } else if (finOrden === 'saldo_desc') {
+    sorted.sort(function(a,b){ return getSaldo(b) - getSaldo(a); });
+  }
+  return sorted;
 }
 
 function renderFinanzas() {
@@ -4980,7 +5007,7 @@ function renderFinanzas() {
 
   // ── Por Pagar / Por Cobrar ────────────────────────────────
   var tipo  = finTab_active;
-  var lista = finanzas_list.filter(function(f){ return f.tipo === tipo; });
+  var lista = sortFinanzas(finanzas_list.filter(function(f){ return f.tipo === tipo; }));
 
   if (!lista.length) {
     panel.innerHTML = '<div style="text-align:center;padding:40px;color:var(--muted)"><div style="font-size:36px;opacity:.3">'+(tipo==='pagar'?'📤':'📥')+'</div><div style="margin-top:8px">No hay registros. Agrega uno con el botón +</div></div>';
@@ -5435,6 +5462,16 @@ function exportProyectoPDF(pi) {
     '</div>'+
     '<div class="resumen">'+
       '<div class="card" style="background:#fef2f2;border:1px solid #fca5a5"><div style="font-size:11px;color:#dc2626;font-weight:700">TOTAL GASTOS</div><div style="font-size:22px;font-weight:800;color:#dc2626">'+fmt(totG)+'</div></div>'+
+      '<div class="card" style="background:#f0fdf4;border:1px solid #86efac"><div style="font-size:11px;color:#16a34a;font-weight:700">TOTAL INGRESOS</div><div style="font-size:22px;font-weight:800;color:#16a34a">'+fmt(totI)+'</div></div>'+
+      '<div class="card" style="background:'+(saldo>=0?'#f0fdf4':'#fef2f2')+';border:1px solid '+(saldo>=0?'#86efac':'#fca5a5')+'"><div style="font-size:11px;color:'+(saldo>=0?'#16a34a':'#dc2626')+';font-weight:700">SALDO</div><div style="font-size:22px;font-weight:800;color:'+(saldo>=0?'#16a34a':'#dc2626')+'">'+fmt(saldo)+'</div></div>'+
+    '</div>'+
+    '<table><thead><tr><th>Tipo</th><th>Categoría</th><th>Descripción</th><th>Fecha</th><th style="text-align:right">Valor</th></tr></thead>'+
+    '<tbody>'+rows+'</tbody></table>'+
+    '</body></html>');
+  w.document.close();
+}
+
+v style="font-size:11px;color:#dc2626;font-weight:700">TOTAL GASTOS</div><div style="font-size:22px;font-weight:800;color:#dc2626">'+fmt(totG)+'</div></div>'+
       '<div class="card" style="background:#f0fdf4;border:1px solid #86efac"><div style="font-size:11px;color:#16a34a;font-weight:700">TOTAL INGRESOS</div><div style="font-size:22px;font-weight:800;color:#16a34a">'+fmt(totI)+'</div></div>'+
       '<div class="card" style="background:'+(saldo>=0?'#f0fdf4':'#fef2f2')+';border:1px solid '+(saldo>=0?'#86efac':'#fca5a5')+'"><div style="font-size:11px;color:'+(saldo>=0?'#16a34a':'#dc2626')+';font-weight:700">SALDO</div><div style="font-size:22px;font-weight:800;color:'+(saldo>=0?'#16a34a':'#dc2626')+'">'+fmt(saldo)+'</div></div>'+
     '</div>'+
