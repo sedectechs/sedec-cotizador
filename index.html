@@ -4953,9 +4953,33 @@ function getSaldo(f) {
 }
 
 function renderFinanzas() {
-  var panel = document.getElementById('finanzasPanel');
+  var panel = document.getElementById('finanzasContenido');
   if (!panel) return;
-  var tipo  = finTab_active === 'pagar' ? 'pagar' : 'cobrar';
+
+  // ── Resumen ──────────────────────────────────────────────
+  if (finTab_active === 'resumen') {
+    var totPagar   = finanzas_list.filter(function(f){ return f.tipo==='pagar'; })
+                      .reduce(function(s,f){ return s+getSaldo(f); },0);
+    var totCobrar  = finanzas_list.filter(function(f){ return f.tipo==='cobrar'; })
+                      .reduce(function(s,f){ return s+getSaldo(f); },0);
+    var balance    = totCobrar - totPagar;
+    var urgentes   = finanzas_list.filter(function(f){
+      if (getSaldo(f)<=0) return false;
+      var dias = diasHasta(f.vence);
+      return f.tipo==='pagar' ? dias<0 : dias<-7;
+    });
+    panel.innerHTML =
+      '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:16px">' +
+        tarjeta('📤 Por Pagar',  totPagar,  '#dc2626', '#fef2f2', "setFinTab('pagar')")   +
+        tarjeta('📥 Por Cobrar', totCobrar, '#16a34a', '#f0fdf4', "setFinTab('cobrar')")  +
+        tarjeta('⚖️ Balance',    balance,   balance>=0?'#16a34a':'#dc2626', '#f8fafc', '') +
+      '</div>' +
+      (urgentes.length ? '<div style="background:#fef2f2;border:1.5px solid #fca5a5;border-radius:8px;padding:12px;font-size:12px;color:#dc2626;font-weight:700">⚠️ '+urgentes.length+' factura(s) con vencimiento urgente</div>' : '');
+    return;
+  }
+
+  // ── Por Pagar / Por Cobrar ────────────────────────────────
+  var tipo  = finTab_active;
   var lista = finanzas_list.filter(function(f){ return f.tipo === tipo; });
 
   if (!lista.length) {
@@ -4964,55 +4988,67 @@ function renderFinanzas() {
   }
 
   panel.innerHTML = lista.map(function(f) {
-    var saldo   = getSaldo(f);
-    var pagada  = saldo <= 0;
-    var pct     = Math.min(100, Math.round(((f.valor - saldo) / f.valor) * 100)) || 0;
-    var sem     = tipo==='pagar' ? getSemaforoPagar(f) : getSemaforoCobrar(f);
-    var semColor = sem==='🟢' ? '#16a34a' : sem==='🟡' ? '#ca8a04' : '#dc2626';
-    var semLabel = sem==='🟢' ? (tipo==='pagar'?'Al día':'En plazo') : sem==='🟡' ? (tipo==='pagar'?'Próx. vencer':'Vencida reciente') : (tipo==='pagar'?'Vencida':'URGENTE COBRAR');
-    var abHTML  = (f.abonos||[]).map(function(a){
+    var saldo  = getSaldo(f);
+    var pagada = saldo <= 0;
+    var pct    = f.valor > 0 ? Math.min(100, Math.round(((f.valor - saldo) / f.valor) * 100)) : 0;
+    var dias   = diasHasta(f.vence);
+    var sem    = tipo==='pagar' ? getSemaforoPagar(dias) : getSemaforoCobrar(dias);
+    var fid    = f.id;
+
+    var abHTML = (f.abonos||[]).map(function(a){
       return '<div style="display:flex;justify-content:space-between;font-size:10px;padding:2px 0;border-bottom:1px solid #f0f4f8">' +
         '<span style="color:var(--muted)">' + a.fecha + ' — ' + (a.nota||'Abono') + '</span>' +
         '<span style="font-weight:700;color:#16a34a">+' + fmt(a.valor) + '</span>' +
       '</div>';
     }).join('');
 
-    var fid = f.id; // capture for onclick
-
     return '<div style="background:#fff;border-radius:10px;border:1px solid var(--border);margin-bottom:10px;overflow:hidden">' +
       '<div style="padding:12px 14px;display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:8px">' +
         '<div style="flex:1;min-width:200px">' +
-          '<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">' +
-            '<span style="font-size:11px;font-weight:700;padding:2px 8px;border-radius:20px;background:' + semColor + '20;color:' + semColor + '">' + sem + ' ' + semLabel + '</span>' +
-            (pagada ? '<span style="font-size:10px;font-weight:700;background:#dcfce7;color:#16a34a;padding:2px 8px;border-radius:20px">✅ ' + (tipo==='pagar'?'PAGADA':'COBRADA') + '</span>' : '') +
+          '<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;flex-wrap:wrap">' +
+            '<span style="font-size:11px;font-weight:700;padding:2px 8px;border-radius:20px;background:'+sem.bg+';color:'+sem.color+'">' + sem.icon + ' ' + sem.label + '</span>' +
+            (pagada ? '<span style="font-size:10px;font-weight:700;background:#dcfce7;color:#16a34a;padding:2px 8px;border-radius:20px">✅ '+(tipo==='pagar'?'PAGADA':'COBRADA')+'</span>' : '') +
           '</div>' +
-          '<div style="font-size:13px;font-weight:800;color:var(--brand-dark)">' + f.nombre + '</div>' +
+          '<div style="font-size:13px;font-weight:800;color:var(--brand-dark)">' + (f.nro ? '['+f.nro+'] ' : '') + f.nombre + '</div>' +
           '<div style="font-size:11px;color:var(--muted)">' + (f.desc||'') + '</div>' +
-          (f.vencimiento ? '<div style="font-size:10px;color:var(--muted);margin-top:2px">Vence: ' + f.vencimiento + '</div>' : '') +
+          (f.vence ? '<div style="font-size:10px;color:var(--muted);margin-top:2px">Vence: ' + f.vence + '</div>' : '') +
         '</div>' +
         '<div style="text-align:right">' +
           '<div style="font-size:10px;color:var(--muted)">Total</div>' +
           '<div style="font-size:16px;font-weight:800;color:var(--brand-dark)">' + fmt(f.valor) + '</div>' +
-          '<div style="font-size:11px;color:' + (saldo>0?'#dc2626':'#16a34a') + ';font-weight:700">Saldo: ' + fmt(saldo) + '</div>' +
+          '<div style="font-size:11px;color:'+(saldo>0?'#dc2626':'#16a34a')+';font-weight:700">Saldo: ' + fmt(saldo) + '</div>' +
         '</div>' +
       '</div>' +
-      // Barra progreso
       '<div style="padding:0 14px 8px">' +
         '<div style="background:#f0f4f8;border-radius:4px;height:6px;overflow:hidden">' +
-          '<div style="background:#16a34a;height:6px;width:' + pct + '%;transition:width .3s"></div>' +
+          '<div style="background:#16a34a;height:6px;width:'+pct+'%;transition:width .3s"></div>' +
         '</div>' +
-        '<div style="font-size:10px;color:var(--muted);margin-top:3px">' + pct + '% ' + (tipo==='pagar'?'pagado':'cobrado') + '</div>' +
+        '<div style="font-size:10px;color:var(--muted);margin-top:3px">'+pct+'% '+(tipo==='pagar'?'pagado':'cobrado')+'</div>' +
       '</div>' +
-      // Abonos
-      (f.abonos && f.abonos.length ? '<div style="padding:0 14px 8px">' + abHTML + '</div>' : '') +
-      // Botones — IDs embebidos con + para concatenación segura
+      (abHTML ? '<div style="padding:0 14px 8px">' + abHTML + '</div>' : '') +
       '<div style="padding:8px 14px 12px;display:flex;gap:6px;flex-wrap:wrap">' +
-        (!pagada ? '<button onclick="openAbonoModal(\'' + fid + '\')" style="background:#f0fdf4;color:#16a34a;border:1.5px solid #86efac;border-radius:6px;padding:4px 12px;font-size:11px;font-weight:700;cursor:pointer">💵 ' + (tipo==='pagar'?'Abonar':'Registrar cobro') + '</button>' : '') +
+        (!pagada ? '<button onclick="openAbonoModal(\'' + fid + '\')" style="background:#f0fdf4;color:#16a34a;border:1.5px solid #86efac;border-radius:6px;padding:4px 12px;font-size:11px;font-weight:700;cursor:pointer">💵 '+(tipo==='pagar'?'Abonar':'Registrar cobro')+'</button>' : '') +
         '<button onclick="editFactura(\'' + fid + '\')" style="background:#eff6ff;color:#3b82f6;border:1.5px solid #93c5fd;border-radius:6px;padding:4px 12px;font-size:11px;font-weight:700;cursor:pointer">✏️ Editar</button>' +
         '<button onclick="deleteFactura(\'' + fid + '\')" style="background:#fef2f2;color:#dc2626;border:1.5px solid #fca5a5;border-radius:6px;padding:4px 12px;font-size:11px;cursor:pointer">🗑</button>' +
       '</div>' +
     '</div>';
   }).join('');
+}
+
+function tarjeta(label, valor, color, bg, onclick) {
+  return '<div onclick="'+onclick+'" style="background:'+bg+';border-radius:10px;padding:14px;text-align:center;cursor:'+(onclick?'pointer':'default')+';border:1px solid '+color+'30">' +
+    '<div style="font-size:11px;font-weight:700;color:'+color+';margin-bottom:4px">'+label+'</div>' +
+    '<div style="font-size:20px;font-weight:800;color:'+color+'">'+fmt(valor)+'</div>' +
+  '</div>';
+}
+
+function diasHasta(fechaStr) {
+  if (!fechaStr) return 999;
+  try {
+    var hoy   = new Date(); hoy.setHours(0,0,0,0);
+    var vence = new Date(fechaStr+'T00:00:00');
+    return Math.round((vence - hoy) / 86400000);
+  } catch(e) { return 999; }
 }
 
 function openFacturaModal(tipo) {
