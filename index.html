@@ -692,9 +692,15 @@ body{-webkit-tap-highlight-color:transparent;-webkit-text-size-adjust:100%}
       <textarea id="logNotas" rows="2" placeholder="Instrucciones adicionales para el técnico..."
         style="width:100%;border:1.5px solid var(--border);border-radius:6px;padding:7px 10px;font-size:13px;box-sizing:border-box;resize:vertical"></textarea>
     </div>
-    <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;padding:10px;background:#f0fdf4;border-radius:8px;border:1px solid #86efac">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;padding:10px;background:#f0fdf4;border-radius:8px;border:1px solid #86efac">
       <input type="checkbox" id="logMateriales" style="width:18px;height:18px;cursor:pointer;accent-color:#16a34a">
       <label for="logMateriales" style="font-size:13px;font-weight:700;color:#16a34a;cursor:pointer">✅ Materiales listos para despacho</label>
+    </div>
+    <div style="margin-bottom:16px;padding:10px;background:#f0f9ff;border-radius:8px;border:1px solid #bae6fd">
+      <div style="font-size:11px;font-weight:700;color:#0369a1;margin-bottom:6px">📲 Grupo WhatsApp para confirmaciones</div>
+      <input id="logWaLink" placeholder="https://chat.whatsapp.com/xxxxxx"
+        style="width:100%;border:1.5px solid #bae6fd;border-radius:6px;padding:7px 10px;font-size:12px;box-sizing:border-box;color:#0369a1">
+      <div style="font-size:10px;color:#64748b;margin-top:4px">Se guarda globalmente — solo necesitas pegarlo una vez</div>
     </div>
     <div style="display:flex;gap:8px;justify-content:flex-end">
       <button onclick="closeLogisticaModal()" style="background:#f1f5f9;border:none;border-radius:8px;padding:8px 16px;font-size:13px;cursor:pointer">Cancelar</button>
@@ -5515,6 +5521,9 @@ function openLogistica(otId, proyecto) {
   var sel=document.getElementById('logTecnico');
   sel.innerHTML='<option value="">— Sin asignar —</option>'+
     tec_config.tecnicos.map(function(t){return '<option value="'+t.nombre+'"'+(log.tecnico===t.nombre?' selected':'')+'>'+t.nombre+'</option>';}).join('');
+  // Cargar waLink guardado
+  var waInput = document.getElementById('logWaLink');
+  if (waInput) waInput.value = tec_config.waLink || '';
   document.getElementById('logisticaModal').style.display='flex';
 }
 function closeLogisticaModal(){ document.getElementById('logisticaModal').style.display='none'; }
@@ -5529,6 +5538,9 @@ function saveLogistica(){
   log.materiales =document.getElementById('logMateriales').checked;
   log.tecnico    =document.getElementById('logTecnico').value;
   if(!log.confirmaciones) log.confirmaciones=[];
+  // Actualizar waLink si se modificó
+  var waInput = document.getElementById('logWaLink');
+  if (waInput && waInput.value.trim()) tec_config.waLink = waInput.value.trim();
   saveTecConfig();closeLogisticaModal();renderTecnicos();
   toast('✅ Logística guardada','ok');
 }
