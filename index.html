@@ -5796,11 +5796,11 @@ function _publicarOT(qi) {
     toast('Primero completa la logística de esta OT', 'err');
     return;
   }
+
+  var totalMO = q.items.reduce(function(s,i){ return s + i.moValue; }, 0);
+
   var actividades = q.items.map(function(item, idx) {
-    return (idx+1) + '. ' + item.desc +
-      ' (' + item.ref + ')' +
-      '  Cant: ' + item.qty +
-      '  ' + item.moType + ' ' + item.moHours + 'h';
+    return (idx+1) + '. ' + item.desc + ' — Cant: ' + item.qty;
   }).join('\n');
 
   var msg =
@@ -5808,24 +5808,27 @@ function _publicarOT(qi) {
     '━━━━━━━━━━━━━━━━━━━━\n' +
     '📋 Proyecto: ' + q.proyecto + '\n' +
     '👤 Cliente: '  + q.cliente  + '\n\n' +
-    '📅 Fecha: '    + log.fecha  + '\n' +
-    '⏰ Hora: '     + (log.hora      || '—') + '\n' +
-    '📍 Dirección: '+ (log.direccion || '—') + '\n' +
+    '📅 Fecha: '     + log.fecha  + '\n' +
+    '⏰ Hora: '      + (log.hora      || '—') + '\n' +
+    '📍 Dirección: ' + (log.direccion || '—') + '\n' +
     '🔧 Materiales: '+ (log.materiales ? '✅ Listos' : '⏳ Pendiente') + '\n' +
     (log.notas ? '📝 Notas: ' + log.notas + '\n' : '') +
-    '\n📌 Actividades (' + q.items.length + '):\n' +
+    '\n' +
+    '💰 Valor total del trabajo: ' + fmt(totalMO) + '\n' +
+    '\n' +
+    '📌 Actividades (' + q.items.length + '):\n' +
     actividades + '\n\n' +
     '━━━━━━━━━━━━━━━━━━━━\n' +
     '👇 ¿Quién puede ejecutar esta instalación?\n' +
     'Responde con tu nombre para confirmar.';
 
-  // Mostrar en el modal
   var ta = document.getElementById('waMsgPreview');
   if (ta) { ta.value = msg; ta.style.height='auto'; ta.style.height=ta.scrollHeight+'px'; }
   var copyBtn = document.getElementById('waCopyBtn');
   if (copyBtn) { copyBtn.textContent = '📋 Copiar mensaje'; copyBtn.style.background='var(--brand-dark)'; }
   document.getElementById('waPreviewModal').style.display = 'flex';
 }
+
 
 function copiarMsgWA() {
   var ta = document.getElementById('waMsgPreview');
