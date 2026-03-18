@@ -5476,6 +5476,7 @@ renderTecnicos = function() {
         '<div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">'+
           logBadge+
           '<button onclick="_openLog('+qi+')" style="background:#f59e0b;color:#fff;border:none;border-radius:6px;padding:5px 12px;font-size:11px;cursor:pointer;font-weight:700">🚛 Logística</button>'+
+          '<button onclick="_publicarOT('+qi+')" style="background:#25d366;color:#fff;border:none;border-radius:6px;padding:5px 12px;font-size:11px;cursor:pointer;font-weight:700">📲 Publicar</button>'+
           '<button onclick="_exportTecPDF('+qi+')" style="background:#1e3a52;color:#fff;border:1px solid #3b82f6;border-radius:6px;padding:5px 12px;font-size:11px;cursor:pointer;font-weight:700">📄 PDF</button>'+
         '</div>'+
       '</div>'+
@@ -5750,6 +5751,57 @@ function _confirmarOT(qi) {
   renderBancoOrdenes();
 }
 function _exportTecPDF(qi){var q=_tecQuotes[qi];if(q)exportTecnicosPDF(q.id);}
+
+function _publicarOT(qi) {
+  var q = _tecQuotes[qi];
+  if (!q) return;
+  var log = tec_config.ots[q.id] || {};
+  if (!log.fecha) {
+    toast('Primero completa la logística de esta OT', 'err');
+    return;
+  }
+  // Construir mensaje completo
+  var actividades = q.items.map(function(item, idx) {
+    return (idx+1) + '. ' + item.desc + ' (' + item.ref + ') — Cant: ' + item.qty + ', ' + item.moType + ' ' + item.moHours + 'h';
+  }).join('\n');
+
+  var msg =
+    '🔧 *ORDEN DE TRABAJO — SEDEC TECNOLOGÍAS*\n' +
+    '━━━━━━━━━━━━━━━━━━━━\n' +
+    '📋 *Proyecto:* ' + q.proyecto + '\n' +
+    '👤 *Cliente:* ' + q.cliente + '\n' +
+    '\n' +
+    '📅 *Fecha:* ' + log.fecha + '\n' +
+    '⏰ *Hora encuentro:* ' + (log.hora || '—') + '\n' +
+    '📍 *Dirección:* ' + (log.direccion || '—') + '\n' +
+    '🔧 *Materiales:* ' + (log.materiales ? '✅ Listos para despacho' : '⏳ Pendiente') + '\n' +
+    (log.notas ? '📝 *Notas:* ' + log.notas + '\n' : '') +
+    '\n' +
+    '📌 *Actividades (' + q.items.length + '):*\n' +
+    actividades + '\n' +
+    '\n' +
+    '━━━━━━━━━━━━━━━━━━━━\n' +
+    '👇 *¿Quién puede ejecutar esta instalación?*\n' +
+    'Responde con tu nombre para confirmar.';
+
+  var waLink = tec_config.waLink || '';
+  var encoded = encodeURIComponent(msg);
+
+  if (waLink && waLink.includes('chat.whatsapp.com')) {
+    // Abrir el grupo — el usuario pega el mensaje ahí
+    window.open(waLink, '_blank');
+    // Pequeño delay y abrir también el mensaje por si prefiere enviar directo
+    setTimeout(function() {
+      window.open('https://api.whatsapp.com/send?text=' + encoded, '_blank');
+    }, 800);
+  } else {
+    // Sin link de grupo configurado — abrir directo con el mensaje
+    window.open('https://api.whatsapp.com/send?text=' + encoded, '_blank');
+    toast('💡 Configura el link del grupo en ⚙️ para abrirlo directo', 'ok');
+  }
+  toast('📲 Abriendo WhatsApp...', 'ok');
+}
+
 </script>
 
 <!-- ══ MODAL: Editar producto del catálogo ══ -->
