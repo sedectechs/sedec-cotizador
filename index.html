@@ -562,12 +562,66 @@ body{-webkit-tap-highlight-color:transparent;-webkit-text-size-adjust:100%}
 
 <!-- TAB: TÉCNICOS -->
 <div class="main" id="tab-tecnicos" style="display:none">
-  <div style="flex:1;padding:16px;overflow-y:auto">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
-      <h2 style="color:var(--brand-dark);font-size:16px">👷 Panel de Técnicos</h2>
-      <button class="btn btn-o btn-sm" onclick="exportTecnicos()" style="color:var(--warn);border-color:var(--warn)">📄 Exportar Orden de Trabajo</button>
+  <div style="flex:1;overflow:hidden;display:flex;flex-direction:column">
+
+    <!-- Sub-tabs técnicos -->
+    <div style="display:flex;gap:0;border-bottom:2px solid var(--border);padding:0 16px;background:#fff">
+      <button id="tecTab-admin" onclick="setTecTab('admin')"
+        style="padding:10px 16px;font-size:12px;font-weight:700;border:none;border-bottom:3px solid var(--brand-dark);background:none;color:var(--brand-dark);cursor:pointer">
+        🔧 Admin
+      </button>
+      <button id="tecTab-banco" onclick="setTecTab('banco')"
+        style="padding:10px 16px;font-size:12px;font-weight:700;border:none;border-bottom:3px solid transparent;background:none;color:var(--muted);cursor:pointer">
+        📋 Banco de Órdenes
+      </button>
+      <button id="tecTab-tecnico" onclick="setTecTab('tecnico')"
+        style="padding:10px 16px;font-size:12px;font-weight:700;border:none;border-bottom:3px solid transparent;background:none;color:var(--muted);cursor:pointer">
+        👤 Vista Técnico
+      </button>
     </div>
-    <div id="tecnicosPanel" style="background:#fff;border-radius:8px;border:1px solid var(--border);padding:16px"></div>
+
+    <!-- ADMIN: lista de OTs agrupadas por cotización -->
+    <div id="tecPanel-admin" style="flex:1;padding:16px;overflow-y:auto">
+      <div id="tecnicosPanel" style=""></div>
+    </div>
+
+    <!-- BANCO: todas las OTs disponibles para que técnico se comprometa -->
+    <div id="tecPanel-banco" style="flex:1;padding:16px;overflow-y:auto;display:none">
+      <div id="bancoPanelContent"></div>
+    </div>
+
+    <!-- VISTA TÉCNICO: login + mis órdenes -->
+    <div id="tecPanel-tecnico" style="flex:1;padding:16px;overflow-y:auto;display:none">
+      <div id="tecLogin" style="max-width:360px;margin:40px auto">
+        <div style="text-align:center;margin-bottom:24px">
+          <div style="font-size:40px">👤</div>
+          <div style="font-size:18px;font-weight:800;color:var(--brand-dark);margin-top:8px">Acceso Técnico</div>
+          <div style="font-size:12px;color:var(--muted);margin-top:4px">Ingresa tus credenciales</div>
+        </div>
+        <select id="tecLoginNombre" style="width:100%;border:1.5px solid var(--border);border-radius:8px;padding:10px 12px;font-size:14px;margin-bottom:10px;box-sizing:border-box">
+          <option value="">— Selecciona tu nombre —</option>
+        </select>
+        <input type="password" id="tecLoginPin" placeholder="PIN (4 dígitos)"
+          style="width:100%;border:1.5px solid var(--border);border-radius:8px;padding:10px 12px;font-size:14px;margin-bottom:14px;box-sizing:border-box;text-align:center;letter-spacing:6px">
+        <button onclick="tecLogin()"
+          style="width:100%;background:var(--brand-dark);color:#fff;border:none;border-radius:8px;padding:12px;font-size:14px;font-weight:700;cursor:pointer">
+          Ingresar
+        </button>
+      </div>
+      <div id="tecDashboard" style="display:none">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:8px">
+          <div>
+            <div style="font-size:16px;font-weight:800;color:var(--brand-dark)" id="tecBienvenido">Hola 👷</div>
+            <div style="font-size:11px;color:var(--muted)">Tus órdenes de trabajo asignadas</div>
+          </div>
+          <button onclick="tecLogout()"
+            style="background:#f1f5f9;border:none;border-radius:6px;padding:6px 14px;font-size:12px;cursor:pointer;color:var(--muted)">
+            Cerrar sesión
+          </button>
+        </div>
+        <div id="tecMisOrdenes"></div>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -607,6 +661,76 @@ body{-webkit-tap-highlight-color:transparent;-webkit-text-size-adjust:100%}
   </div>
 </div>
 
+
+<!-- Modal: Logística de OT -->
+<div class="modal-ov" id="logisticaModal" style="display:none">
+  <div class="modal" style="max-width:500px;width:95%">
+    <h3>🚛 Logística de la Orden</h3>
+    <input type="hidden" id="logisticaOTId">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
+      <div class="fl">
+        <label style="font-size:12px;font-weight:700;color:var(--brand-dark)">Fecha de ejecución</label>
+        <input type="date" id="logFecha" style="width:100%;border:1.5px solid var(--border);border-radius:6px;padding:7px 10px;font-size:13px;box-sizing:border-box">
+      </div>
+      <div class="fl">
+        <label style="font-size:12px;font-weight:700;color:var(--brand-dark)">Hora de encuentro</label>
+        <input type="time" id="logHora" style="width:100%;border:1.5px solid var(--border);border-radius:6px;padding:7px 10px;font-size:13px;box-sizing:border-box">
+      </div>
+    </div>
+    <div class="fl" style="margin-bottom:10px">
+      <label style="font-size:12px;font-weight:700;color:var(--brand-dark)">Dirección / Punto de encuentro</label>
+      <input id="logDireccion" placeholder="Ej: Cll 18 #25-40, Pasto" style="width:100%;border:1.5px solid var(--border);border-radius:6px;padding:7px 10px;font-size:13px;box-sizing:border-box">
+    </div>
+    <div class="fl" style="margin-bottom:10px">
+      <label style="font-size:12px;font-weight:700;color:var(--brand-dark)">Técnico asignado</label>
+      <select id="logTecnico" style="width:100%;border:1.5px solid var(--border);border-radius:6px;padding:7px 10px;font-size:13px;box-sizing:border-box">
+        <option value="">— Sin asignar —</option>
+      </select>
+    </div>
+    <div class="fl" style="margin-bottom:10px">
+      <label style="font-size:12px;font-weight:700;color:var(--brand-dark)">Notas / Instrucciones</label>
+      <textarea id="logNotas" rows="2" placeholder="Instrucciones adicionales para el técnico..."
+        style="width:100%;border:1.5px solid var(--border);border-radius:6px;padding:7px 10px;font-size:13px;box-sizing:border-box;resize:vertical"></textarea>
+    </div>
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;padding:10px;background:#f0fdf4;border-radius:8px;border:1px solid #86efac">
+      <input type="checkbox" id="logMateriales" style="width:18px;height:18px;cursor:pointer;accent-color:#16a34a">
+      <label for="logMateriales" style="font-size:13px;font-weight:700;color:#16a34a;cursor:pointer">✅ Materiales listos para despacho</label>
+    </div>
+    <div style="display:flex;gap:8px;justify-content:flex-end">
+      <button onclick="closeLogisticaModal()" style="background:#f1f5f9;border:none;border-radius:8px;padding:8px 16px;font-size:13px;cursor:pointer">Cancelar</button>
+      <button onclick="saveLogistica()" style="background:var(--brand-dark);color:#fff;border:none;border-radius:8px;padding:8px 18px;font-size:13px;font-weight:700;cursor:pointer">💾 Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Configurar técnicos + WhatsApp -->
+<div class="modal-ov" id="configTecModal" style="display:none">
+  <div class="modal" style="max-width:460px;width:95%">
+    <h3>⚙️ Configuración de Técnicos</h3>
+    <div class="fl" style="margin-bottom:14px">
+      <label style="font-size:12px;font-weight:700;color:var(--brand-dark)">Link grupo WhatsApp</label>
+      <input id="cfgWaLink" placeholder="https://chat.whatsapp.com/xxxxxx"
+        style="width:100%;border:1.5px solid var(--border);border-radius:6px;padding:7px 10px;font-size:13px;box-sizing:border-box">
+      <div style="font-size:11px;color:var(--muted);margin-top:4px">El técnico recibirá el enlace de confirmación a este grupo</div>
+    </div>
+    <div style="margin-bottom:14px">
+      <div style="font-size:12px;font-weight:700;color:var(--brand-dark);margin-bottom:8px">Técnicos registrados</div>
+      <div id="tecListaConfig" style="margin-bottom:10px;max-height:200px;overflow-y:auto"></div>
+      <div style="display:grid;grid-template-columns:1fr auto auto;gap:6px">
+        <input id="cfgTecNombre" placeholder="Nombre del técnico"
+          style="border:1.5px solid var(--border);border-radius:6px;padding:6px 10px;font-size:13px">
+        <input id="cfgTecPin" placeholder="PIN" maxlength="4" type="password"
+          style="width:70px;border:1.5px solid var(--border);border-radius:6px;padding:6px 10px;font-size:13px;text-align:center">
+        <button onclick="addTecnico()"
+          style="background:var(--brand-dark);color:#fff;border:none;border-radius:6px;padding:6px 14px;font-size:12px;font-weight:700;cursor:pointer">+ Agregar</button>
+      </div>
+    </div>
+    <div style="display:flex;gap:8px;justify-content:flex-end">
+      <button onclick="closeConfigTecModal()" style="background:#f1f5f9;border:none;border-radius:8px;padding:8px 16px;font-size:13px;cursor:pointer">Cancelar</button>
+      <button onclick="saveConfigTec()" style="background:var(--brand-dark);color:#fff;border:none;border-radius:8px;padding:8px 18px;font-size:13px;font-weight:700;cursor:pointer">Guardar</button>
+    </div>
+  </div>
+</div>
 <!-- Modal: nueva factura -->
 <div class="modal-ov" id="facturaModal" style="display:none">
   <div class="modal" style="max-width:460px;width:95%">
@@ -1948,6 +2072,31 @@ var state = {
 // ============================================================
 var history_list = [];
 try { history_list = JSON.parse(localStorage.getItem('sedec_history_v1')||'[]'); } catch(e){}
+
+// Migración: calcular ganancia para cotizaciones antiguas que no la tienen
+(function(){
+  var dirty = false;
+  history_list.forEach(function(q) {
+    if (q.ganancia !== undefined) return; // ya tiene ganancia, skip
+    if (!q.categories) return;            // sin datos, no se puede calcular
+    var totVenta  = q.categories.reduce(function(s,c){
+      return s + c.items.reduce(function(ss,i){return ss+i.venta;},0)
+               + c.fletes.reduce(function(ss,f){return ss+(f.valor||0);},0);
+    },0);
+    var totCosto  = q.categories.reduce(function(s,c){
+      return s + c.items.reduce(function(ss,i){return ss+i.precio*i.qty;},0);
+    },0);
+    var totMO     = q.categories.reduce(function(s,c){
+      return s + c.items.reduce(function(ss,i){return ss+(i.moValue||0);},0);
+    },0);
+    q.ganancia = totVenta - totCosto - totMO;
+    dirty = true;
+  });
+  if (dirty) {
+    try { localStorage.setItem('sedec_history_v1', JSON.stringify(history_list)); } catch(e){}
+  }
+})();
+
 function saveHistory() { try { localStorage.setItem('sedec_history_v1',JSON.stringify(history_list)); } catch(e){} }
 
 // ============================================================
@@ -3153,7 +3302,7 @@ function setTab(tab) {
     b.classList.toggle('active',['cotizar','catalogo','historial','tecnicos','finanzas','proyectos'][i]===tab);
   });
   if(tab==='catalogo')  {renderCatalogTab(state.catFilter,state.catPageN||0);}
-  if(tab==='tecnicos')  {populateTecnicoSelector();renderTecnicos();}
+  if(tab==='tecnicos')  {populateTecnicoSelector();renderTecnicos();setTecTab(tecTab_active||'admin');}
   if(tab==='finanzas')  {var ab=document.getElementById('finAddBtns'),ob=document.getElementById('finOrdenBar');if(ab)ab.style.display='none';if(ob)ob.style.display='none';setFinTab(finTab_active||'resumen');}
   if(tab==='proyectos') {renderProyectos();}
 }
@@ -5225,6 +5374,370 @@ function exportProyectoPDF(pi){
 }
 
 // ── Sync Drive: incluir finanzas + proyectos ──────────────
+
+// ============================================================
+// TÉCNICOS — Logística, Banco de Órdenes, Vista Técnico
+// ============================================================
+var tecTab_active = 'admin';
+var tecSesion     = null;
+var _tecQuotes    = []; // array global para onclicks seguros
+
+var tec_config = (function(){
+  try { return JSON.parse(localStorage.getItem('sedec_tec_config_v1')||'{}'); } catch(e) { return {}; }
+})();
+if (!tec_config.tecnicos) tec_config.tecnicos = [];
+if (!tec_config.ots)      tec_config.ots      = {};
+if (!tec_config.waLink)   tec_config.waLink   = '';
+
+function saveTecConfig() {
+  try { localStorage.setItem('sedec_tec_config_v1', JSON.stringify(tec_config)); } catch(e) {}
+}
+
+function setTecTab(tab) {
+  tecTab_active = tab;
+  ['admin','banco','tecnico'].forEach(function(t) {
+    var btn   = document.getElementById('tecTab-'+t);
+    var panel = document.getElementById('tecPanel-'+t);
+    if (btn) {
+      btn.style.borderBottomColor = t===tab ? 'var(--brand-dark)' : 'transparent';
+      btn.style.color             = t===tab ? 'var(--brand-dark)' : 'var(--muted)';
+      btn.style.fontWeight        = t===tab ? '800' : '700';
+    }
+    if (panel) { panel.style.display = t===tab ? 'flex' : 'none'; panel.style.flexDirection='column'; }
+  });
+  if (tab==='banco')   renderBancoOrdenes();
+  if (tab==='tecnico') renderTecLogin();
+}
+
+// ── renderTecnicos override con logística ───────────────────
+renderTecnicos = function() {
+  var panel = document.getElementById('tecnicosPanel');
+  if (!panel) return;
+  _tecQuotes = [];
+  var amo = [];
+  state.categories.forEach(function(cat){
+    cat.items.filter(function(i){return i.moValue>0;}).forEach(function(i){
+      amo.push(Object.assign({},i,{catName:cat.name}));
+    });
+  });
+  if (amo.length>0) _tecQuotes.push({id:'(activa)',proyecto:(document.getElementById('qProyecto')||{}).value||'Cotización activa',
+    cliente:(document.getElementById('qCliente')||{}).value||'—',items:amo});
+  history_list.forEach(function(q){
+    if (!q.categories) return;
+    var mo=[];
+    q.categories.forEach(function(cat){(cat.items||[]).filter(function(i){return i.moValue>0;}).forEach(function(i){mo.push(Object.assign({},i,{catName:cat.name}));});});
+    if (mo.length>0) _tecQuotes.push({id:q.id,proyecto:q.proyecto,cliente:q.cliente,items:mo});
+  });
+  if (!_tecQuotes.length) {
+    panel.innerHTML='<div style="text-align:center;color:var(--muted);padding:40px"><div style="font-size:36px;opacity:.3">👷</div><div>No hay mano de obra registrada.</div></div>';
+    return;
+  }
+  var cfgBtn='<div style="display:flex;justify-content:flex-end;margin-bottom:12px">'+
+    '<button onclick="openConfigTecModal()" style="background:#f1f5f9;color:var(--brand-dark);border:1.5px solid var(--border);border-radius:8px;padding:6px 14px;font-size:12px;font-weight:700;cursor:pointer">⚙️ Config técnicos</button>'+
+    '</div>';
+  panel.innerHTML = cfgBtn + _tecQuotes.map(function(q,qi){
+    var sub  = q.items.reduce(function(s,i){return s+i.moValue;},0);
+    var log  = tec_config.ots[q.id]||{};
+    var rows = q.items.map(function(item,idx){
+      return '<tr style="border-bottom:1px solid #f0f4f8">'+
+        '<td style="padding:7px 10px;text-align:center;font-size:11px;color:#94a3b8">'+(idx+1)+'</td>'+
+        '<td style="padding:7px 10px;font-size:10px;color:var(--muted)">'+item.catName.replace('Sistema de ','').replace('Sistema ','')+'</td>'+
+        '<td style="padding:7px 10px;font-family:monospace;font-size:10px;color:var(--brand);font-weight:700">'+item.ref+'</td>'+
+        '<td style="padding:7px 10px;font-size:11px">'+item.desc+'</td>'+
+        '<td style="padding:7px 10px;text-align:center;font-size:11px">'+item.qty+'</td>'+
+        '<td style="padding:7px 10px;text-align:center;font-weight:700;color:var(--brand);font-size:11px">'+item.moType+'</td>'+
+        '<td style="padding:7px 10px;text-align:center;font-size:11px">'+item.moHours+'h</td>'+
+        '<td style="padding:7px 10px;text-align:right;font-weight:800;color:var(--brand-dark)">'+fmt(item.moValue)+'</td>'+
+      '</tr>';
+    }).join('');
+    var hasFecha=log.fecha&&log.hora;
+    var logBadge=hasFecha
+      ?'<span style="font-size:10px;background:#f0fdf4;color:#16a34a;border:1px solid #86efac;border-radius:20px;padding:2px 8px;font-weight:700">📅 '+log.fecha+' '+log.hora+(log.materiales?' · ✅ Mat.':'')+'</span>'
+      :'<span style="font-size:10px;background:#fffbeb;color:#d97706;border:1px solid #fcd34d;border-radius:20px;padding:2px 8px;font-weight:700">⚠️ Sin logística</span>';
+    var confs=log.confirmaciones||[];
+    var confHTML=confs.length
+      ?'<div style="padding:6px 16px;display:flex;gap:6px;flex-wrap:wrap">'+
+          confs.map(function(c){return '<span style="font-size:10px;background:#dcfce7;color:#16a34a;border-radius:20px;padding:2px 10px;font-weight:700">✅ '+c.tecnico+' · '+c.fecha+'</span>';}).join('')+
+        '</div>'
+      :'';
+    return '<div style="margin-bottom:18px;border-radius:10px;border:1px solid var(--border);overflow:hidden">'+
+      '<div style="background:var(--brand-dark);padding:10px 16px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">'+
+        '<div>'+
+          '<span style="font-size:10px;color:#93c5fd;font-weight:700;margin-right:8px">'+q.id+'</span>'+
+          '<span style="font-size:13px;color:#fff;font-weight:800">'+q.proyecto+'</span>'+
+          '<span style="font-size:11px;color:#94a3b8;margin-left:10px">'+q.cliente+'</span>'+
+        '</div>'+
+        '<div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">'+
+          logBadge+
+          '<button onclick="_openLog('+qi+')" style="background:#f59e0b;color:#fff;border:none;border-radius:6px;padding:5px 12px;font-size:11px;cursor:pointer;font-weight:700">🚛 Logística</button>'+
+          '<button onclick="_exportTecPDF('+qi+')" style="background:#1e3a52;color:#fff;border:1px solid #3b82f6;border-radius:6px;padding:5px 12px;font-size:11px;cursor:pointer;font-weight:700">📄 PDF</button>'+
+        '</div>'+
+      '</div>'+
+      (hasFecha?'<div style="padding:8px 16px;background:#f8fafc;border-bottom:1px solid var(--border);font-size:11px;color:var(--muted)">'+
+        '📍 '+(log.direccion||'Sin dirección')+
+        (log.notas?' · 📝 '+log.notas:'')+
+        (log.tecnico?' · 👷 '+log.tecnico:'')+
+      '</div>':'')+
+      confHTML+
+      '<table style="width:100%;border-collapse:collapse;background:#fff">'+
+        '<thead><tr style="background:#f0f4f8">'+
+          '<th style="padding:7px 10px;font-size:10px;color:var(--muted);text-align:center">#</th>'+
+          '<th style="padding:7px 10px;font-size:10px;color:var(--muted)">Sistema</th>'+
+          '<th style="padding:7px 10px;font-size:10px;color:var(--muted)">Ref</th>'+
+          '<th style="padding:7px 10px;font-size:10px;color:var(--muted)">Descripción</th>'+
+          '<th style="padding:7px 10px;font-size:10px;color:var(--muted);text-align:center">Cant</th>'+
+          '<th style="padding:7px 10px;font-size:10px;color:var(--muted);text-align:center">Tipo</th>'+
+          '<th style="padding:7px 10px;font-size:10px;color:var(--muted);text-align:center">Hrs</th>'+
+          '<th style="padding:7px 10px;font-size:10px;color:var(--muted);text-align:right">Total MO</th>'+
+        '</tr></thead>'+
+        '<tbody>'+rows+'</tbody>'+
+        '<tfoot><tr style="background:#f8fafc">'+
+          '<td colspan="7" style="padding:9px 10px;font-weight:700;font-size:12px;color:var(--brand-dark)">Subtotal MO</td>'+
+          '<td style="padding:9px 10px;text-align:right;font-size:15px;font-weight:800;color:var(--brand-dark)">'+fmt(sub)+'</td>'+
+        '</tr></tfoot>'+
+      '</table>'+
+    '</div>';
+  }).join('');
+};
+
+// Helper seguro para onclick
+function _openLog(qi) { var q=_tecQuotes[qi]; if(q) openLogistica(q.id,q.proyecto); }
+
+// ── Logística ────────────────────────────────────────────────
+function openLogistica(otId, proyecto) {
+  var log=tec_config.ots[otId]||{};
+  document.getElementById('logisticaOTId').value   = otId;
+  document.getElementById('logFecha').value        = log.fecha     ||new Date().toISOString().split('T')[0];
+  document.getElementById('logHora').value         = log.hora      ||'08:00';
+  document.getElementById('logDireccion').value    = log.direccion ||'';
+  document.getElementById('logNotas').value        = log.notas     ||'';
+  document.getElementById('logMateriales').checked = log.materiales||false;
+  var sel=document.getElementById('logTecnico');
+  sel.innerHTML='<option value="">— Sin asignar —</option>'+
+    tec_config.tecnicos.map(function(t){return '<option value="'+t.nombre+'"'+(log.tecnico===t.nombre?' selected':'')+'>'+t.nombre+'</option>';}).join('');
+  document.getElementById('logisticaModal').style.display='flex';
+}
+function closeLogisticaModal(){ document.getElementById('logisticaModal').style.display='none'; }
+function saveLogistica(){
+  var otId=document.getElementById('logisticaOTId').value;
+  if(!tec_config.ots[otId]) tec_config.ots[otId]={confirmaciones:[]};
+  var log=tec_config.ots[otId];
+  log.fecha      =document.getElementById('logFecha').value;
+  log.hora       =document.getElementById('logHora').value;
+  log.direccion  =document.getElementById('logDireccion').value.trim();
+  log.notas      =document.getElementById('logNotas').value.trim();
+  log.materiales =document.getElementById('logMateriales').checked;
+  log.tecnico    =document.getElementById('logTecnico').value;
+  if(!log.confirmaciones) log.confirmaciones=[];
+  saveTecConfig();closeLogisticaModal();renderTecnicos();
+  toast('✅ Logística guardada','ok');
+}
+
+// ── Config técnicos ──────────────────────────────────────────
+function openConfigTecModal(){
+  document.getElementById('cfgWaLink').value='';
+  setTimeout(function(){ document.getElementById('cfgWaLink').value=tec_config.waLink||''; },10);
+  document.getElementById('cfgTecNombre').value='';
+  document.getElementById('cfgTecPin').value='';
+  renderTecListaConfig();
+  document.getElementById('configTecModal').style.display='flex';
+}
+function closeConfigTecModal(){ document.getElementById('configTecModal').style.display='none'; }
+function renderTecListaConfig(){
+  var lista=document.getElementById('tecListaConfig');
+  if(!lista) return;
+  if(!tec_config.tecnicos.length){lista.innerHTML='<div style="font-size:12px;color:var(--muted);padding:8px 0">Sin técnicos.</div>';return;}
+  lista.innerHTML=tec_config.tecnicos.map(function(t,i){
+    return '<div style="display:flex;align-items:center;justify-content:space-between;padding:6px 0;border-bottom:1px solid #f0f4f8">'+
+      '<span style="font-size:13px;font-weight:700">'+t.nombre+'</span>'+
+      '<div style="display:flex;gap:6px;align-items:center">'+
+        '<span style="font-size:11px;color:var(--muted)">PIN: ****</span>'+
+        '<button onclick="deleteTecnico('+i+')" style="background:none;border:none;color:#fca5a5;cursor:pointer;font-size:14px">🗑</button>'+
+      '</div></div>';
+  }).join('');
+}
+function addTecnico(){
+  var nombre=document.getElementById('cfgTecNombre').value.trim();
+  var pin=document.getElementById('cfgTecPin').value.trim();
+  if(!nombre||pin.length<4){toast('Nombre y PIN de 4 dígitos requeridos','err');return;}
+  if(tec_config.tecnicos.find(function(t){return t.nombre===nombre;})){toast('Ya existe','err');return;}
+  tec_config.tecnicos.push({nombre:nombre,pin:pin});
+  saveTecConfig();
+  document.getElementById('cfgTecNombre').value='';
+  document.getElementById('cfgTecPin').value='';
+  renderTecListaConfig();renderTecLoginSelector();
+  toast('Técnico agregado','ok');
+}
+function deleteTecnico(i){
+  if(!confirm('¿Eliminar "'+tec_config.tecnicos[i].nombre+'"?')) return;
+  tec_config.tecnicos.splice(i,1);saveTecConfig();renderTecListaConfig();renderTecLoginSelector();
+}
+function saveConfigTec(){
+  tec_config.waLink=document.getElementById('cfgWaLink').value.trim();
+  saveTecConfig();closeConfigTecModal();toast('✅ Configuración guardada','ok');
+}
+
+// ── Banco de Órdenes ─────────────────────────────────────────
+function renderBancoOrdenes(){
+  var panel=document.getElementById('bancoPanelContent');
+  if(!panel) return;
+  var quotes=[];
+  history_list.forEach(function(q){
+    if(!q.categories) return;
+    var mo=[];
+    q.categories.forEach(function(cat){(cat.items||[]).filter(function(i){return i.moValue>0;}).forEach(function(i){mo.push(Object.assign({},i,{catName:cat.name}));});});
+    if(mo.length>0) quotes.push({id:q.id,proyecto:q.proyecto,cliente:q.cliente,items:mo});
+  });
+  if(!quotes.length){panel.innerHTML='<div style="text-align:center;padding:40px;color:var(--muted)"><div style="font-size:36px;opacity:.3">📋</div><div>No hay órdenes.</div></div>';return;}
+  panel.innerHTML='<div style="font-size:12px;color:var(--muted);margin-bottom:12px">Órdenes disponibles. Los técnicos pueden comprometerse desde su vista.</div>'+
+    quotes.map(function(q){
+      var log=tec_config.ots[q.id]||{};
+      var confs=log.confirmaciones||[];
+      var totMO=q.items.reduce(function(s,i){return s+i.moValue;},0);
+      var sc=confs.length?'#16a34a':(log.fecha?'#d97706':'#94a3b8');
+      var sl=confs.length?'✅ Confirmada ('+confs.length+')':(log.fecha?'⏳ Programada':'📋 Sin programar');
+      return '<div style="background:#fff;border-radius:10px;border:1px solid var(--border);margin-bottom:12px;padding:14px">'+
+        '<div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:8px">'+
+          '<div>'+
+            '<div style="margin-bottom:4px"><span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:20px;background:'+sc+'20;color:'+sc+'">'+sl+'</span></div>'+
+            '<div style="font-size:14px;font-weight:800;color:var(--brand-dark)">'+q.proyecto+'</div>'+
+            '<div style="font-size:11px;color:var(--muted)">'+q.cliente+' · '+q.items.length+' actividades</div>'+
+            (log.fecha?'<div style="font-size:11px;color:var(--brand-dark);margin-top:4px;font-weight:700">📅 '+log.fecha+' '+log.hora+'</div>':'')+
+            (log.direccion?'<div style="font-size:11px;color:var(--muted)">📍 '+log.direccion+'</div>':'')+
+          '</div>'+
+          '<div style="text-align:right">'+
+            '<div style="font-size:15px;font-weight:800;color:var(--brand-dark)">'+fmt(totMO)+'</div>'+
+            '<div style="font-size:10px;color:var(--muted)">Total MO</div>'+
+          '</div>'+
+        '</div>'+
+        (confs.length?'<div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap">'+
+          confs.map(function(c){return '<span style="font-size:10px;background:#dcfce7;color:#16a34a;border-radius:20px;padding:2px 10px;font-weight:700">✅ '+c.tecnico+'</span>';}).join('')+
+        '</div>':'')+
+      '</div>';
+    }).join('');
+}
+
+// ── Vista Técnico ────────────────────────────────────────────
+var _tecMisQ = []; // array seguro para confirmarOT
+function renderTecLogin(){
+  renderTecLoginSelector();
+  if(tecSesion){showTecDashboard();}
+  else{document.getElementById('tecLogin').style.display='block';document.getElementById('tecDashboard').style.display='none';}
+}
+function renderTecLoginSelector(){
+  var sel=document.getElementById('tecLoginNombre');
+  if(!sel) return;
+  sel.innerHTML='<option value="">— Selecciona tu nombre —</option>'+
+    tec_config.tecnicos.map(function(t){return '<option value="'+t.nombre+'">'+t.nombre+'</option>';}).join('');
+}
+function tecLogin(){
+  var nombre=document.getElementById('tecLoginNombre').value;
+  var pin=document.getElementById('tecLoginPin').value;
+  if(!nombre){toast('Selecciona tu nombre','err');return;}
+  var tec=tec_config.tecnicos.find(function(t){return t.nombre===nombre&&t.pin===pin;});
+  if(!tec){toast('PIN incorrecto','err');document.getElementById('tecLoginPin').value='';return;}
+  tecSesion={nombre:tec.nombre};showTecDashboard();
+}
+function tecLogout(){
+  tecSesion=null;
+  document.getElementById('tecLogin').style.display='block';
+  document.getElementById('tecDashboard').style.display='none';
+  document.getElementById('tecLoginPin').value='';
+}
+function showTecDashboard(){
+  document.getElementById('tecLogin').style.display='none';
+  document.getElementById('tecDashboard').style.display='block';
+  document.getElementById('tecBienvenido').textContent='Hola, '+tecSesion.nombre+' 👷';
+  renderMisOrdenes();
+}
+function renderMisOrdenes(){
+  var panel=document.getElementById('tecMisOrdenes');
+  if(!panel||!tecSesion) return;
+  _tecMisQ=[];
+  history_list.forEach(function(q){
+    if(!q.categories) return;
+    var log=tec_config.ots[q.id];
+    if(!log||!log.fecha) return;
+    var mo=[];
+    q.categories.forEach(function(cat){(cat.items||[]).filter(function(i){return i.moValue>0;}).forEach(function(i){mo.push(Object.assign({},i,{catName:cat.name}));});});
+    if(mo.length>0) _tecMisQ.push({id:q.id,proyecto:q.proyecto,cliente:q.cliente,items:mo,log:log});
+  });
+  if(!_tecMisQ.length){
+    panel.innerHTML='<div style="text-align:center;padding:40px;color:var(--muted)"><div style="font-size:36px;opacity:.3">📋</div><div>No hay órdenes programadas aún.</div></div>';
+    return;
+  }
+  panel.innerHTML=_tecMisQ.map(function(q,qi){
+    var confs=q.log.confirmaciones||[];
+    var yaConf=confs.find(function(c){return c.tecnico===tecSesion.nombre;});
+    var totMO=q.items.reduce(function(s,i){return s+i.moValue;},0);
+    var actHTML=q.items.map(function(item,idx){
+      return '<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid #f0f4f8">'+
+        '<div style="min-width:24px;text-align:center;font-size:12px;color:#94a3b8">'+(idx+1)+'</div>'+
+        '<div style="flex:1">'+
+          '<div style="font-size:12px;font-weight:700;color:var(--brand-dark)">'+item.desc+'</div>'+
+          '<div style="font-size:10px;color:var(--muted)">'+item.ref+' · Cant: '+item.qty+' · '+item.moType+' · '+item.moHours+'h</div>'+
+        '</div></div>';
+    }).join('');
+    return '<div style="background:#fff;border-radius:12px;border:1px solid var(--border);margin-bottom:16px;overflow:hidden">'+
+      '<div style="background:var(--brand-dark);padding:12px 16px">'+
+        '<div style="font-size:14px;color:#fff;font-weight:800">'+q.proyecto+'</div>'+
+        '<div style="font-size:11px;color:#94a3b8">'+q.cliente+'</div>'+
+      '</div>'+
+      '<div style="padding:12px 16px;background:#f8fafc;border-bottom:1px solid var(--border)">'+
+        '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">'+
+          '<div><div style="font-size:10px;color:var(--muted);font-weight:700">FECHA Y HORA</div>'+
+            '<div style="font-size:13px;font-weight:800;color:var(--brand-dark)">'+q.log.fecha+' · '+q.log.hora+'</div></div>'+
+          '<div><div style="font-size:10px;color:var(--muted);font-weight:700">MATERIALES</div>'+
+            '<div style="font-size:13px;font-weight:800;color:'+(q.log.materiales?'#16a34a':'#d97706')+'">'+
+              (q.log.materiales?'✅ Listos':'⏳ Pendiente')+'</div></div>'+
+        '</div>'+
+        '<div style="margin-top:8px"><div style="font-size:10px;color:var(--muted);font-weight:700">DIRECCIÓN</div>'+
+          '<div style="font-size:13px;color:var(--brand-dark)">📍 '+(q.log.direccion||'Sin dirección')+'</div></div>'+
+        (q.log.notas?'<div style="margin-top:6px;font-size:12px;color:var(--muted)">📝 '+q.log.notas+'</div>':'')+
+      '</div>'+
+      '<div style="padding:12px 16px">'+
+        '<div style="font-size:11px;font-weight:700;color:var(--muted);margin-bottom:6px">ACTIVIDADES ('+q.items.length+')</div>'+
+        actHTML+
+      '</div>'+
+      '<div style="padding:12px 16px;border-top:1px solid var(--border)">'+
+        (yaConf
+          ?'<div style="background:#f0fdf4;border:1px solid #86efac;border-radius:8px;padding:10px;text-align:center;font-size:13px;font-weight:700;color:#16a34a">✅ Ya confirmaste · '+yaConf.fecha+'</div>'
+          :'<button onclick="_confirmarOT('+qi+')" style="width:100%;background:#16a34a;color:#fff;border:none;border-radius:8px;padding:12px;font-size:14px;font-weight:800;cursor:pointer">✅ Confirmar que acepto esta instalación</button>'
+        )+
+      '</div>'+
+    '</div>';
+  }).join('');
+}
+
+function _confirmarOT(qi) {
+  var q=_tecMisQ[qi];
+  if(!q||!tecSesion) return;
+  if(!tec_config.ots[q.id]) tec_config.ots[q.id]={confirmaciones:[]};
+  if(!tec_config.ots[q.id].confirmaciones) tec_config.ots[q.id].confirmaciones=[];
+  var yaConf=tec_config.ots[q.id].confirmaciones.find(function(c){return c.tecnico===tecSesion.nombre;});
+  if(yaConf){toast('Ya confirmaste esta orden','ok');return;}
+  var ahora=new Date();
+  var ts=ahora.toLocaleDateString('es-CO')+' '+ahora.toLocaleTimeString('es-CO',{hour:'2-digit',minute:'2-digit'});
+  tec_config.ots[q.id].confirmaciones.push({tecnico:tecSesion.nombre,fecha:ts});
+  saveTecConfig();
+  // Mensaje WhatsApp
+  var log=q.log;
+    var msg='✅ *'+tecSesion.nombre+'* confirmó la instalación\n'+
+    '📋 *Proyecto:* '+q.proyecto+'\n'+
+    '📅 *Fecha:* '+(log.fecha||'—')+' '+(log.hora||'')+'\n'+
+    '📍 *Dirección:* '+(log.direccion||'—')+'\n'+
+    '🔧 *Materiales:* '+(log.materiales?'✅ Listos':'⏳ Pendiente');
+  var encoded=encodeURIComponent(msg);
+  // Abrir link del grupo primero (el usuario reenvía ahí), luego mensaje directo
+  if(tec_config.waLink) window.open(tec_config.waLink,'_blank');
+  setTimeout(function(){
+    window.open('https://api.whatsapp.com/send?text='+encoded,'_blank');
+  },600);
+  toast('✅ Confirmado — abriendo WhatsApp','ok');
+  renderMisOrdenes();
+  renderBancoOrdenes();
+}
+function _exportTecPDF(qi){var q=_tecQuotes[qi];if(q)exportTecnicosPDF(q.id);}
 </script>
 
 <!-- ══ MODAL: Editar producto del catálogo ══ -->
