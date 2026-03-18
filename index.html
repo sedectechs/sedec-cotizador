@@ -662,6 +662,42 @@ body{-webkit-tap-highlight-color:transparent;-webkit-text-size-adjust:100%}
 </div>
 
 
+
+<!-- Modal: Preview mensaje WhatsApp -->
+<div class="modal-ov" id="waPreviewModal" style="display:none">
+  <div class="modal" style="max-width:520px;width:95%">
+    <h3 style="margin-bottom:4px">📲 Enviar al grupo de WhatsApp</h3>
+    <p style="font-size:12px;color:var(--muted);margin:0 0 12px">Copia el mensaje y pégalo en el grupo</p>
+
+    <!-- Paso 1: Copiar -->
+    <div style="background:#f8fafc;border:1.5px solid var(--border);border-radius:8px;padding:12px;margin-bottom:12px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+        <span style="font-size:11px;font-weight:700;color:var(--muted)">PASO 1 — Copia el mensaje</span>
+        <button id="waCopyBtn" onclick="copiarMsgWA()"
+          style="background:var(--brand-dark);color:#fff;border:none;border-radius:6px;padding:5px 14px;font-size:12px;font-weight:700;cursor:pointer">
+          📋 Copiar mensaje
+        </button>
+      </div>
+      <textarea id="waMsgPreview" readonly rows="10"
+        style="width:100%;border:1px solid var(--border);border-radius:6px;padding:8px;font-size:11px;font-family:monospace;background:#fff;box-sizing:border-box;resize:none;color:#0f172a;line-height:1.5"
+        onclick="this.select()"></textarea>
+    </div>
+
+    <!-- Paso 2: Abrir grupo -->
+    <div style="background:#f0fdf4;border:1.5px solid #86efac;border-radius:8px;padding:12px;margin-bottom:16px">
+      <div style="font-size:11px;font-weight:700;color:#16a34a;margin-bottom:8px">PASO 2 — Abre el grupo y pega</div>
+      <button onclick="abrirGrupoWA()"
+        style="width:100%;background:#25d366;color:#fff;border:none;border-radius:8px;padding:10px;font-size:14px;font-weight:700;cursor:pointer">
+        💬 Abrir grupo de WhatsApp
+      </button>
+    </div>
+
+    <button onclick="document.getElementById('waPreviewModal').style.display='none'"
+      style="width:100%;background:#f1f5f9;border:none;border-radius:8px;padding:10px;font-size:13px;cursor:pointer;color:var(--muted)">
+      Cerrar
+    </button>
+  </div>
+</div>
 <!-- Modal: Logística de OT -->
 <div class="modal-ov" id="logisticaModal" style="display:none">
   <div class="modal" style="max-width:500px;width:95%">
@@ -5760,46 +5796,83 @@ function _publicarOT(qi) {
     toast('Primero completa la logística de esta OT', 'err');
     return;
   }
-  // Construir mensaje completo
   var actividades = q.items.map(function(item, idx) {
-    return (idx+1) + '. ' + item.desc + ' (' + item.ref + ') — Cant: ' + item.qty + ', ' + item.moType + ' ' + item.moHours + 'h';
+    return (idx+1) + '. ' + item.desc +
+      ' (' + item.ref + ')' +
+      '  Cant: ' + item.qty +
+      '  ' + item.moType + ' ' + item.moHours + 'h';
   }).join('\n');
 
   var msg =
-    '🔧 *ORDEN DE TRABAJO — SEDEC TECNOLOGÍAS*\n' +
+    '🔧 ORDEN DE TRABAJO — SEDEC TECNOLOGÍAS\n' +
     '━━━━━━━━━━━━━━━━━━━━\n' +
-    '📋 *Proyecto:* ' + q.proyecto + '\n' +
-    '👤 *Cliente:* ' + q.cliente + '\n' +
-    '\n' +
-    '📅 *Fecha:* ' + log.fecha + '\n' +
-    '⏰ *Hora encuentro:* ' + (log.hora || '—') + '\n' +
-    '📍 *Dirección:* ' + (log.direccion || '—') + '\n' +
-    '🔧 *Materiales:* ' + (log.materiales ? '✅ Listos para despacho' : '⏳ Pendiente') + '\n' +
-    (log.notas ? '📝 *Notas:* ' + log.notas + '\n' : '') +
-    '\n' +
-    '📌 *Actividades (' + q.items.length + '):*\n' +
-    actividades + '\n' +
-    '\n' +
+    '📋 Proyecto: ' + q.proyecto + '\n' +
+    '👤 Cliente: '  + q.cliente  + '\n\n' +
+    '📅 Fecha: '    + log.fecha  + '\n' +
+    '⏰ Hora: '     + (log.hora      || '—') + '\n' +
+    '📍 Dirección: '+ (log.direccion || '—') + '\n' +
+    '🔧 Materiales: '+ (log.materiales ? '✅ Listos' : '⏳ Pendiente') + '\n' +
+    (log.notas ? '📝 Notas: ' + log.notas + '\n' : '') +
+    '\n📌 Actividades (' + q.items.length + '):\n' +
+    actividades + '\n\n' +
     '━━━━━━━━━━━━━━━━━━━━\n' +
-    '👇 *¿Quién puede ejecutar esta instalación?*\n' +
+    '👇 ¿Quién puede ejecutar esta instalación?\n' +
     'Responde con tu nombre para confirmar.';
 
-  var waLink = tec_config.waLink || '';
-  var encoded = encodeURIComponent(msg);
+  // Mostrar en el modal
+  var ta = document.getElementById('waMsgPreview');
+  if (ta) { ta.value = msg; ta.style.height='auto'; ta.style.height=ta.scrollHeight+'px'; }
+  var copyBtn = document.getElementById('waCopyBtn');
+  if (copyBtn) { copyBtn.textContent = '📋 Copiar mensaje'; copyBtn.style.background='var(--brand-dark)'; }
+  document.getElementById('waPreviewModal').style.display = 'flex';
+}
 
+function copiarMsgWA() {
+  var ta = document.getElementById('waMsgPreview');
+  if (!ta) return;
+  ta.select();
+  ta.setSelectionRange(0, 99999);
+  var ok = false;
+  try { ok = document.execCommand('copy'); } catch(e) {}
+  if (!ok && navigator.clipboard) {
+    navigator.clipboard.writeText(ta.value).catch(function(){});
+    ok = true;
+  }
+  var btn = document.getElementById('waCopyBtn');
+  if (btn) { btn.textContent = '✅ Copiado!'; btn.style.background='#16a34a'; }
+  setTimeout(function(){
+    if (btn) { btn.textContent = '📋 Copiar mensaje'; btn.style.background='var(--brand-dark)'; }
+  }, 2500);
+}
+
+function abrirGrupoWA() {
+  var waLink = tec_config.waLink || '';
   if (waLink && waLink.includes('chat.whatsapp.com')) {
-    // Abrir el grupo — el usuario pega el mensaje ahí
     window.open(waLink, '_blank');
-    // Pequeño delay y abrir también el mensaje por si prefiere enviar directo
-    setTimeout(function() {
-      window.open('https://api.whatsapp.com/send?text=' + encoded, '_blank');
-    }, 800);
   } else {
-    // Sin link de grupo configurado — abrir directo con el mensaje
+    // Sin link: abrir WA con el mensaje (fallback)
+    var ta = document.getElementById('waMsgPreview');
+    var encoded = encodeURIComponent(ta ? ta.value : '');
     window.open('https://api.whatsapp.com/send?text=' + encoded, '_blank');
     toast('💡 Configura el link del grupo en ⚙️ para abrirlo directo', 'ok');
   }
-  toast('📲 Abriendo WhatsApp...', 'ok');
+}
+
+
+function _fallbackCopy(text) {
+  var ta = document.createElement('textarea');
+  ta.value = text;
+  ta.style.position = 'fixed';
+  ta.style.opacity  = '0';
+  document.body.appendChild(ta);
+  ta.focus(); ta.select();
+  try {
+    document.execCommand('copy');
+    toast('✅ Mensaje copiado — pégalo en el grupo de WhatsApp', 'ok');
+  } catch(e) {
+    toast('Abre el grupo y pega el mensaje manualmente', 'ok');
+  }
+  document.body.removeChild(ta);
 }
 
 </script>
