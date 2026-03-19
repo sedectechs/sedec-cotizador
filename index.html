@@ -3397,6 +3397,13 @@ function exportPDF() {
   var fecha=new Date().toLocaleDateString('es-CO',{year:'numeric',month:'long',day:'numeric'});
   var noCot='Q-'+Date.now().toString().slice(-8);
   var totVenta=state.categories.reduce(function(s,c){return s+c.items.reduce(function(ss,i){return ss+i.venta;},0)+c.fletes.reduce(function(ss,f){return ss+f.valor;},0);},0);
+  var pdfDescPct   = (descuentoActivo && descuentoPct>0) ? descuentoPct : 0;
+  var pdfDescMonto = pdfDescPct>0 ? Math.round(totVenta*pdfDescPct/100) : 0;
+  var pdfTotal     = totVenta - pdfDescMonto;
+  var pdfDescRow   = pdfDescPct>0
+    ? '<div class="trow" style="color:#f87171"><span>Descuento ('+pdfDescPct+'%):</span><span>- '+fmt(pdfDescMonto)+'</span></div>'
+    : '';
+  var pdfTotBox    = '+pdfTotBox+';
 
   // Build table rows grouped by category
   var allRows='';
