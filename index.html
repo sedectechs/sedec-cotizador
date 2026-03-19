@@ -4943,6 +4943,8 @@ function buildSyncPackage() {
     historial:  history_list || [],
     customProducts: CUSTOM_PRODUCTS || [],
     catalogOverrides: CATALOG_OVERRIDES || {},
+    finanzas:         finanzas_list   || [],
+    proyectos:        proyectos_data  || [],
     config: {
       qEmpresa:  document.getElementById('qEmpresa')  ? document.getElementById('qEmpresa').value  : '',
       qTel:      document.getElementById('qTel')      ? document.getElementById('qTel').value      : '',
@@ -5005,6 +5007,27 @@ function applySyncPackage(pkg) {
       localStorage.setItem('sedec_drive_v1', JSON.stringify(driveConfig));
     }
     changed.push('configuración');
+  }
+
+
+  // Finanzas
+  if (pkg.finanzas && pkg.finanzas.length > 0) {
+    var mF = {};
+    (finanzas_list||[]).forEach(function(f){ if(f&&f.id) mF[f.id]=f; });
+    pkg.finanzas.forEach(function(f){ if(f&&f.id) mF[f.id]=f; });
+    finanzas_list = Object.values(mF);
+    try { localStorage.setItem('sedec_finanzas_v1', JSON.stringify(finanzas_list)); } catch(e){}
+    changed.push(finanzas_list.length + ' facturas');
+  }
+
+  // Proyectos
+  if (pkg.proyectos && pkg.proyectos.length > 0) {
+    var mP = {};
+    (proyectos_data||[]).forEach(function(p){ if(p&&p.id) mP[p.id]=p; });
+    pkg.proyectos.forEach(function(p){ if(p&&p.id) mP[p.id]=p; });
+    proyectos_data = Object.values(mP);
+    try { localStorage.setItem('sedec_proyectos_v1', JSON.stringify(proyectos_data)); } catch(e){}
+    changed.push(proyectos_data.length + ' proyectos');
   }
 
   return changed;
@@ -5111,7 +5134,10 @@ async function syncPull() {
     updateSyncStatus();
 
     // Refrescar UI
-    if (typeof renderHistoryTab === 'function') renderHistoryTab();
+    renderHistorial();
+    onSearch('');
+    if (typeof setFinTab === 'function') setFinTab(finTab_active || 'resumen');
+    if (typeof renderProyectos === 'function') renderProyectos();
     
     toast('✅ Datos recibidos: ' + changed.join(', '), 'ok');
   } catch(e) {
