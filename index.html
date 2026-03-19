@@ -255,15 +255,77 @@ body{-webkit-tap-highlight-color:transparent;-webkit-text-size-adjust:100%}
 .hdr{padding-top:env(safe-area-inset-top);height:calc(56px + env(safe-area-inset-top))}
 .main{height:calc(100vh - 56px - env(safe-area-inset-top))}
 @media(max-width:640px){
-  .panel-l{width:100%;min-width:0;border-right:none;border-bottom:1px solid var(--border);max-height:200px}
+  /* Layout principal */
   .main{flex-direction:column}
-  .editor-grid{grid-template-columns:80px 1fr}
-  .img-box{width:80px;height:80px}
-  .hdr-tabs .tab{padding:5px 7px;font-size:10px}
+  
+  /* Panel izquierdo — búsqueda de productos */
+  .panel-l{
+    width:100%;min-width:0;
+    border-right:none;border-bottom:1px solid var(--border);
+    max-height:45vh;   /* 45% de la pantalla — suficiente para buscar */
+    flex-shrink:0;
+  }
+  
+  /* Panel derecho — cotización */
+  .panel-r{flex:1;min-height:0;overflow-y:auto}
+  
+  /* Editor de productos */
+  .editor-grid{grid-template-columns:72px 1fr}
+  .img-box{width:72px;height:72px}
+  
+  /* Header nav — tabs más grandes para dedo */
+  .hdr-tabs{overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+  .hdr-tabs::-webkit-scrollbar{display:none}
+  .hdr-tabs .tab{
+    padding:8px 10px;
+    font-size:11px;
+    white-space:nowrap;
+    flex-shrink:0;
+  }
+  
+  /* Marca */
   .brand span{display:none}
-  .act-bar{overflow-x:auto;flex-wrap:nowrap;padding:6px 8px}
-  .q-hdr .fl{min-width:130px}
+  .brand{font-size:13px}
+  
+  /* Barra de acciones — wrap en móvil */
+  .act-bar{
+    flex-wrap:wrap;
+    padding:8px;
+    gap:6px;
+  }
+  .act-bar .btn{font-size:11px;padding:6px 10px}
+  
+  /* Label descuento más compacto */
+  #descCtrl{padding:4px 8px}
+  #descCtrl span{font-size:10px}
+  
+  /* Historial */
   .hist-card{flex-wrap:wrap}
+  .hist-total{font-size:13px}
+  
+  /* Campos de formulario */
+  .q-hdr .fl{min-width:120px}
+  .q-hdr{gap:8px}
+  
+  /* Modal más ancho en móvil */
+  .modal{margin:8px;width:calc(100% - 16px) !important;max-width:100% !important;
+    max-height:90vh;overflow-y:auto;border-radius:12px}
+  
+  /* Totales más compactos */
+  .totals-main .tr{font-size:12px}
+  .totals-main .tr.big{font-size:15px}
+  
+  /* Tablas técnicos scroll horizontal */
+  #tecnicosPanel table{display:block;overflow-x:auto;-webkit-overflow-scrolling:touch}
+  
+  /* Finanzas cards en columna */
+  #finanzasContenido > div{margin-bottom:10px}
+}
+
+/* iPhone safe area */
+@supports(padding:max(0px)){
+  .act-bar{padding-bottom:max(8px, env(safe-area-inset-bottom))}
+  .hdr{padding-top:max(0px, env(safe-area-inset-top))}
 }
 /* FIRMA */
 .firma-modal .modal{max-width:520px;padding:16px}
@@ -316,6 +378,33 @@ body{-webkit-tap-highlight-color:transparent;-webkit-text-size-adjust:100%}
 .tab-content, .catalog-body, .history-list { -webkit-overflow-scrolling: touch; }
 /* Splash screen color */
 @media (prefers-color-scheme: dark) { body { background:#0d1f2e; } }
+
+/* ── MEJORAS TÁCTILES GLOBALES ── */
+button, .btn, .tab, label[for], input[type="checkbox"] {
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation; /* evita doble-tap zoom */
+}
+input, select, textarea {
+  font-size: 16px !important; /* evita zoom automático en iOS */
+}
+/* Excepciones donde 16px es demasiado grande */
+.hdr-tabs .tab, .hist-card *, .totals-main * { font-size: inherit !important; }
+input.srch-input, #searchInput { font-size: 16px !important; }
+
+/* Scrolling suave en iOS */
+.panel-l, .panel-r, .main > div {
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Botones más grandes para dedo en móvil */
+@media(max-width:640px){
+  .btn { min-height: 36px; }
+  .tab { min-height: 40px; }
+  input[type="number"], input[type="text"], input[type="date"],
+  input[type="time"], input[type="password"], select, textarea {
+    min-height: 40px;
+  }
+}
 </style>
 </head>
 <body>
@@ -376,7 +465,7 @@ body{-webkit-tap-highlight-color:transparent;-webkit-text-size-adjust:100%}
               <img id="editorImg" src="" style="display:none" alt="">
               <div class="img-ov">📷 Cambiar</div>
             </div>
-            <input type="file" id="imgUpload" accept="image/*" onchange="onImgUpload(event)">
+            <input type="file" id="imgUpload" accept="image/*,image/heic,image/heif" capture="environment" onchange="onImgUpload(event)">
             <button class="btn btn-b btn-sm" style="width:100%;margin-top:5px;justify-content:center" onclick="searchImgOnline()">🌐 Buscar imagen</button>
           </div>
           <div class="e-fields">
@@ -2530,21 +2619,84 @@ function updateTotals() {
 // ============================================================
 function onImgUpload(e) {
   var file = e.target.files[0]; if (!file) return;
+  // Corregir orientación EXIF antes de procesar (iPhone gira las fotos)
+  fixImageOrientation(file, function(correctedFile) {
+    if (driveToken) {
+      uploadImgToDrive(correctedFile);
+    } else {
+      var reader = new FileReader();
+      reader.onload = function(ev) {
+        setProductImg(ev.target.result);
+        toast('Imagen guardada localmente','');
+      };
+      reader.readAsDataURL(correctedFile);
+    }
+  });
+}
 
-  // Si Drive está conectado → subir a Drive y guardar solo URL
-  if (driveToken) {
-    uploadImgToDrive(file);
-    return;
-  }
-
-  // Sin Drive → guardar base64 localmente (fallback)
+function fixImageOrientation(file, callback) {
+  // Leer EXIF para detectar orientación
   var reader = new FileReader();
-  reader.onload = function(ev) {
-    var src = ev.target.result;
-    setProductImg(src);
-    toast('Imagen guardada localmente (conecta Drive para sin límite)','');
+  reader.onload = function(e) {
+    var view = new DataView(e.target.result);
+    // Verificar JPEG
+    if (view.getUint16(0, false) !== 0xFFD8) {
+      // No es JPEG o no tiene EXIF — usar como está
+      callback(file); return;
+    }
+    var offset = 2, marker;
+    while (offset < view.byteLength) {
+      marker = view.getUint16(offset, false);
+      offset += 2;
+      if (marker === 0xFFE1) { // APP1 (EXIF)
+        if (view.getUint32(offset += 2, false) !== 0x45786966) { callback(file); return; }
+        var little = view.getUint16(offset += 6, false) === 0x4949;
+        offset += view.getUint32(offset + 4, little);
+        var tags = view.getUint16(offset, little);
+        offset += 2;
+        for (var i = 0; i < tags; i++) {
+          if (view.getUint16(offset + (i * 12), little) === 0x0112) {
+            var orientation = view.getUint16(offset + (i * 12) + 8, little);
+            _rotateImage(file, orientation, callback);
+            return;
+          }
+        }
+      } else if ((marker & 0xFF00) !== 0xFF00) break;
+      else offset += view.getUint16(offset, false);
+    }
+    callback(file); // Sin orientación EXIF
   };
-  reader.readAsDataURL(file);
+  reader.readAsArrayBuffer(file);
+}
+
+function _rotateImage(file, orientation, callback) {
+  if (orientation <= 1) { callback(file); return; } // Sin rotación necesaria
+  var url = URL.createObjectURL(file);
+  var img = new Image();
+  img.onload = function() {
+    var canvas = document.createElement('canvas');
+    var ctx = canvas.getContext('2d');
+    var w = img.width, h = img.height;
+    // Ajustar dimensiones según orientación
+    if (orientation >= 5 && orientation <= 8) { canvas.width=h; canvas.height=w; }
+    else { canvas.width=w; canvas.height=h; }
+    // Aplicar transformación
+    switch(orientation) {
+      case 2: ctx.transform(-1,0,0,1,w,0); break;
+      case 3: ctx.transform(-1,0,0,-1,w,h); break;
+      case 4: ctx.transform(1,0,0,-1,0,h); break;
+      case 5: ctx.transform(0,1,1,0,0,0); break;
+      case 6: ctx.transform(0,1,-1,0,h,0); break;
+      case 7: ctx.transform(0,-1,-1,0,h,w); break;
+      case 8: ctx.transform(0,-1,1,0,0,w); break;
+    }
+    ctx.drawImage(img,0,0);
+    URL.revokeObjectURL(url);
+    canvas.toBlob(function(blob){
+      callback(new File([blob], file.name, {type:'image/jpeg'}));
+    },'image/jpeg',0.92);
+  };
+  img.src = url;
 }
 
 async function uploadImgToDrive(file) {
