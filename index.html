@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no,viewport-fit=cover">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=5.0,user-scalable=yes,viewport-fit=cover">
 <meta name="format-detection" content="telephone=no">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -31,7 +31,7 @@ body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--t
 .tab.active{background:var(--accent)}
 
 /* LAYOUT */
-.main{display:flex;height:calc(100vh - 56px);overflow:hidden}
+.main{display:flex;height:calc(100dvh - 56px);overflow:hidden}
 
 /* LEFT PANEL */
 .panel-l{width:0;min-width:0;background:#fff;border-right:none;display:flex;flex-direction:column;overflow:hidden;transition:width .25s ease,min-width .25s ease,border-right .25s ease;}
@@ -258,7 +258,7 @@ body{-webkit-tap-highlight-color:transparent;-webkit-text-size-adjust:100%}
 @media(max-width:640px){
 
   /* ── Layout principal ── */
-  .main{flex-direction:column;height:calc(100vh - 56px - env(safe-area-inset-top) - 54px)}
+  .main{flex-direction:column;height:calc(100dvh - 48px - env(safe-area-inset-top) - 54px);min-height:0}
   
   /* ── Buscador panel ── */
   .panel-l.open{
@@ -324,6 +324,11 @@ body{-webkit-tap-highlight-color:transparent;-webkit-text-size-adjust:100%}
   /* ── Botones historial — tamaño táctil ── */
   .hist-card .btn-sm{padding:6px 8px;font-size:10px;min-height:32px}
   .status-badge{padding:5px 10px;font-size:11px;min-height:32px}
+  [id^="tab-"]{height:100%;min-height:0}
+  .panel-c{min-height:0;flex:1}
+  .q-panel{min-height:0;-webkit-overflow-scrolling:touch}
+  .hist-panel{min-height:0;-webkit-overflow-scrolling:touch}
+
 }
 
 
@@ -3075,29 +3080,29 @@ function renderHistorial() {
         '<div class="hist-no">'+q.id+'</div>'+
         '<div class="hist-info" style="flex:1;min-width:140px">'+
           '<div class="hist-proj">'+q.proyecto+'</div>'+
-          '<div class="hist-detail">'+q.cliente+' · '+q.ciudad+' · '+q.fecha+' · '+q.items+' ítem(s)</div>'+
+          '<div class="hist-detail">'+q.cliente+' · '+q.ciudad+' · '+q.fecha+' · '+q.items+' item(s)</div>'+
         '</div>'+
         '<button class="status-badge '+si.cls+'" title="Click para cambiar estado">'+si.label+'</button>'+
         '<div style="text-align:right">'+
           '<div class="hist-total">'+fmt(q.total)+'</div>'+
-          (q.ganancia?'<div style="font-size:11px;color:#16a34a;font-weight:700">💰 '+fmt(q.ganancia)+'</div>':'')+
+          (q.ganancia?'<div style="font-size:11px;color:#16a34a;font-weight:700">Gan: '+fmt(q.ganancia)+'</div>':'')+
           (q.descuentoPct?'<div style="font-size:10px;color:#dc2626">Dto '+q.descuentoPct+'%</div>':'')+
         '</div>'+
       '</div>'+
       '<div style="width:100%;display:flex;gap:4px;flex-wrap:wrap;padding-top:8px;border-top:1px solid #f0f4f8;margin-top:6px">'+
         (hasSnap
-          ? '<button class="btn btn-o btn-sm btn-editar" style="color:#0369a1;border-color:#bae6fd;font-size:11px">✏️ Editar</button>'+
-            '<button class="btn btn-o btn-sm btn-dupl" style="color:#065f46;border-color:#6ee7b7;font-size:11px">📋 Duplicar</button>'
-          : '<span style="font-size:10px;color:#94a3b8;font-style:italic">sin snapshot</span>')+
-        '<button class="btn btn-o btn-sm btn-pdf" style="color:#365979;border-color:#93c5fd;font-size:11px">📄 PDF</button>'+
-        '<button class="btn btn-o btn-sm btn-pdftec" style="color:var(--warn);border-color:var(--warn);font-size:11px">👷 Téc.</button>'+
-        '<button class="btn btn-o btn-sm btn-pptx" style="color:#6d28d9;border-color:#7c3aed;font-size:11px">📊 PPT</button>'+
-        '<button class="btn btn-o btn-sm btn-cont" style="color:#7c3aed;border-color:#c4b5fd;font-size:11px">📄 Contrato</button>'+
-        '<button class="btn btn-o btn-sm btn-firma" style="color:#0369a1;border-color:#bae6fd;font-size:11px">✍️ Firma</button>'+
-        '<button class="btn btn-o btn-sm btn-cobro" style="color:#16a34a;border-color:#bbf7d0;font-size:11px">🧾 Cobro</button>'+
-        '<button class="btn btn-danger btn-del" style="font-size:11px;padding:3px 8px;border-radius:5px;border:1.5px solid #fecaca">🗑️</button>'+
+          ? '<button class="btn btn-o btn-sm btn-editar" style="color:#0369a1;border-color:#bae6fd;font-size:11px">Editar</button>'+
+            '<button class="btn btn-o btn-sm btn-dupl" style="color:#065f46;border-color:#6ee7b7;font-size:11px">Duplicar</button>'
+          : '')+
+        '<button class="btn btn-o btn-sm btn-pdf" style="color:#365979;border-color:#93c5fd;font-size:11px">PDF</button>'+
+        '<button class="btn btn-o btn-sm btn-pdftec" style="color:var(--warn);border-color:var(--warn);font-size:11px">Tec.</button>'+
+        '<button class="btn btn-o btn-sm btn-pptx" style="color:#6d28d9;border-color:#7c3aed;font-size:11px">PPT</button>'+
+        '<button class="btn btn-o btn-sm btn-cont" style="color:#7c3aed;border-color:#c4b5fd;font-size:11px">Contrato</button>'+
+        '<button class="btn btn-o btn-sm btn-firma" style="color:#0369a1;border-color:#bae6fd;font-size:11px">Firmar</button>'+
+        '<button class="btn btn-o btn-sm btn-cobro" style="color:#16a34a;border-color:#bbf7d0;font-size:11px">Cobro</button>'+
+        '<button class="btn btn-danger btn-del" style="font-size:11px;padding:3px 8px;border-radius:5px;border:1.5px solid #fecaca">Elim</button>'+
       '</div>';
-    card.querySelector('.status-badge').addEventListener('click',(function(idx){return function(){cycleStatus(idx);};})(i));
+        card.querySelector('.status-badge').addEventListener('click',(function(idx){return function(){cycleStatus(idx);};})(i));
     if(hasSnap){
       card.querySelector('.btn-editar').addEventListener('click',(function(idx){return function(){
       loadQuoteFromHistory(idx,false); setTab('cotizar');
