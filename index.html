@@ -258,8 +258,19 @@ body{-webkit-tap-highlight-color:transparent;-webkit-text-size-adjust:100%}
 .main{height:calc(100vh - 56px - env(safe-area-inset-top))}
 @media(max-width:640px){
   /* Layout */
-  .hdr{height:auto;min-height:44px;padding-top:env(safe-area-inset-top)}
-  .main{flex-direction:column}
+  .hdr{
+    height:calc(56px + env(safe-area-inset-top));
+    min-height:calc(44px + env(safe-area-inset-top));
+    padding-top:env(safe-area-inset-top);
+    align-items:flex-end;
+    padding-bottom:8px;
+  }
+  .main{
+    flex-direction:column;
+    height:calc(100dvh - 56px - env(safe-area-inset-top));
+    max-height:calc(100dvh - 56px - env(safe-area-inset-top));
+    overflow:hidden;
+  }
   
   /* Bottom nav space */
 
@@ -3076,7 +3087,7 @@ function renderHistorial() {
           '<div class="hist-proj">'+q.proyecto+'</div>'+
           '<div class="hist-detail">'+q.cliente+' · '+q.ciudad+' · '+q.fecha+' · '+q.items+' item(s)</div>'+
         '</div>'+
-        '<button class="status-badge '+si.cls+'" title="Click para cambiar estado">'+si.label+'</button>'+
+        '<button class="status-badge '+si.cls+'" onclick="cycleStatus('+i+')" style="cursor:pointer">'+si.label+'</button>'+
         '<div style="text-align:right">'+
           '<div class="hist-total">'+fmt(q.total)+'</div>'+
           (q.ganancia?'<div style="font-size:11px;color:#16a34a;font-weight:700">Gan: '+fmt(q.ganancia)+'</div>':'')+
@@ -3096,8 +3107,7 @@ function renderHistorial() {
         '<button class="btn btn-o btn-sm btn-cobro" style="color:#16a34a;border-color:#bbf7d0;font-size:11px">Cobro</button>'+
         '<button class="btn btn-danger btn-del" style="font-size:11px;padding:3px 8px;border-radius:5px;border:1.5px solid #fecaca">Elim</button>'+
       '</div>';
-        card.querySelector('.status-badge').addEventListener('click',(function(idx){return function(){cycleStatus(idx);};})(i));
-    if(hasSnap){
+        if(hasSnap){
       card.querySelector('.btn-editar').addEventListener('click',(function(idx){return function(){
       loadQuoteFromHistory(idx,false); setTab('cotizar');
     };})(i));
