@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=5.0,user-scalable=yes,viewport-fit=cover">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no,viewport-fit=cover">
 <meta name="format-detection" content="telephone=no">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -17,8 +17,7 @@
 <style>
 :root{--brand:#365979;--brand-dark:#0d1f2e;--brand-mid:#1e3a52;--accent:#e63946;--bg:#f0f4f8;--card:#fff;--border:#dde3ea;--text:#0f172a;--muted:#64748b;--success:#10b981;--warn:#f59e0b}
 *{box-sizing:border-box;margin:0;padding:0}
-html,body{height:100%;height:100dvh;}
-body{display:flex;flex-direction:column;height:100dvh;overflow:hidden;font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
 
 /* HEADER */
 .hdr{background:linear-gradient(135deg,var(--brand-dark),var(--brand-mid));color:#fff;padding:0 20px;display:flex;align-items:center;justify-content:space-between;height:56px;box-shadow:0 2px 12px rgba(0,0,0,.3);position:sticky;top:0;z-index:100}
@@ -32,7 +31,7 @@ body{display:flex;flex-direction:column;height:100dvh;overflow:hidden;font-famil
 .tab.active{background:var(--accent)}
 
 /* LAYOUT */
-.main{display:flex;overflow:hidden;flex:1;min-height:0}
+.main{display:flex;height:calc(100vh - 56px);overflow:hidden}
 
 /* LEFT PANEL */
 .panel-l{width:0;min-width:0;background:#fff;border-right:none;display:flex;flex-direction:column;overflow:hidden;transition:width .25s ease,min-width .25s ease,border-right .25s ease;}
@@ -257,85 +256,80 @@ body{-webkit-tap-highlight-color:transparent;-webkit-text-size-adjust:100%}
 .hdr{padding-top:env(safe-area-inset-top);height:calc(56px + env(safe-area-inset-top))}
 .main{height:calc(100vh - 56px - env(safe-area-inset-top))}
 @media(max-width:640px){
-  /* Layout */
-  .hdr{
-    height:calc(56px + env(safe-area-inset-top));
-    min-height:calc(44px + env(safe-area-inset-top));
-    padding-top:env(safe-area-inset-top);
-    align-items:flex-end;
-    padding-bottom:8px;
-  }
-  .main{
-    flex-direction:column;
-    height:calc(100dvh - 56px - env(safe-area-inset-top));
-    max-height:calc(100dvh - 56px - env(safe-area-inset-top));
-    overflow:hidden;
-  }
-  
-  /* Bottom nav space */
 
+  /* ── Layout principal ── */
+  .main{flex-direction:column;height:calc(100vh - 56px - env(safe-area-inset-top) - 54px)}
   
-  /* Buscador abierto */
+  /* ── Buscador panel ── */
   .panel-l.open{
     width:100%;min-width:0;max-width:100%;
     border-right:none;border-bottom:2px solid var(--border);
-    height:45vh;max-height:45vh;flex-shrink:0;overflow:hidden;
+    max-height:50vh;flex-shrink:0;
   }
   
-  /* Panel central ocupa el resto */
-  .panel-c{flex:1;min-height:0;overflow:hidden}
-  .q-panel{flex:1;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch}
-  .hist-panel{flex:1;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch}
-  
-  /* Editor */
+  /* ── Editor ── */
   .editor-grid{grid-template-columns:72px 1fr}
   .img-box{width:72px;height:72px}
   
-  /* Header tabs — visibles en móvil, compactos */
-  .hdr-tabs{display:flex;overflow-x:auto;-webkit-overflow-scrolling:touch;gap:0;scrollbar-width:none}
-  .hdr-tabs::-webkit-scrollbar{display:none}
-  .hdr-tabs .tab{padding:4px 8px;font-size:10px;white-space:nowrap;flex-shrink:0}
+  /* ── Header tabs OCULTOS en móvil (usamos bottom nav) ── */
+  .hdr-tabs{display:none}
   .brand span{display:none}
-  /* Ocultar bottom nav en móvil si hay tabs arriba */
-  .bottom-nav{display:none !important}
+  .hdr{height:48px;padding-top:env(safe-area-inset-top)}
+  .main{height:calc(100dvh - 48px - env(safe-area-inset-top) - 54px)}
   
-  /* Act-bar */
-  .act-bar{flex-wrap:wrap;padding:8px 10px;gap:6px}
+  /* ── Barra de acciones ── */
+  .act-bar{
+    flex-wrap:wrap;
+    padding:8px 10px;
+    gap:6px;
+    padding-bottom:max(8px,env(safe-area-inset-bottom));
+  }
   .act-bar .btn{font-size:11px;padding:7px 10px;min-height:36px}
   
-  /* Evitar zoom iOS en inputs */
+  /* ── Campos de formulario — evitar zoom en iOS ── */
   input,select,textarea{font-size:16px !important}
   .fl input,.fl select,.fl textarea{min-height:40px}
   
-  /* Historial */
+  /* ── Historial ── */
   .hist-card{flex-wrap:wrap;gap:6px}
   .hist-no{font-size:10px}
-  .hist-card .btn-sm{padding:6px 8px;font-size:10px;min-height:32px}
-  .status-badge{padding:5px 10px;font-size:11px;min-height:32px}
   
-  /* Totales */
+  /* ── Totales ── */
   .totals-bar{flex-direction:column;gap:10px}
+  .totals-main .tr{font-size:12px}
+  .totals-main .tr.big{font-size:15px}
   
-  /* Modales desde abajo */
-  .modal-ov{align-items:flex-end;padding:0}
+  /* ── Modales full-width ── */
   .modal{
-    width:100% !important;max-width:100% !important;
-    max-height:90dvh;overflow-y:auto;
+    width:calc(100% - 16px) !important;
+    max-width:100% !important;
+    max-height:90dvh;
+    overflow-y:auto;
     border-radius:16px 16px 0 0 !important;
-    margin:0;
+    margin:0 8px;
   }
+  .modal-ov{align-items:flex-end;padding:0}
   
-  /* Q-header */
+  /* ── Q-header campos ── */
   .q-hdr{gap:8px}
   .q-hdr .fl{min-width:calc(50% - 4px);flex:1}
   
-  /* Técnicos tabla */
+  /* ── Tablas técnicos scroll ── */
   #tecnicosPanel table{display:block;overflow-x:auto;-webkit-overflow-scrolling:touch;font-size:10px}
   
-  /* Descuento */
+  /* ── Descuento label ── */
   #descCtrl span{font-size:10px}
   #descPct{width:46px}
+  
+  /* ── Botones historial — tamaño táctil ── */
+  .hist-card .btn-sm{padding:6px 8px;font-size:10px;min-height:32px}
+  .status-badge{padding:5px 10px;font-size:11px;min-height:32px}
+  .panel-c{flex:1;min-height:0;overflow:hidden}
+  .q-panel{flex:1;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch}
+  .hist-panel{flex:1;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch}
 }
+
+
 
 /* FIRMA */
 .firma-modal .modal{max-width:520px;padding:16px}
@@ -3085,29 +3079,29 @@ function renderHistorial() {
         '<div class="hist-no">'+q.id+'</div>'+
         '<div class="hist-info" style="flex:1;min-width:140px">'+
           '<div class="hist-proj">'+q.proyecto+'</div>'+
-          '<div class="hist-detail">'+q.cliente+' · '+q.ciudad+' · '+q.fecha+' · '+q.items+' item(s)</div>'+
+          '<div class="hist-detail">'+q.cliente+' · '+q.ciudad+' · '+q.fecha+' · '+q.items+' ítem(s)</div>'+
         '</div>'+
         '<button class="status-badge '+si.cls+'" onclick="cycleStatus('+i+')" style="cursor:pointer">'+si.label+'</button>'+
         '<div style="text-align:right">'+
           '<div class="hist-total">'+fmt(q.total)+'</div>'+
-          (q.ganancia?'<div style="font-size:11px;color:#16a34a;font-weight:700">Gan: '+fmt(q.ganancia)+'</div>':'')+
+          (q.ganancia?'<div style="font-size:11px;color:#16a34a;font-weight:700">💰 '+fmt(q.ganancia)+'</div>':'')+
           (q.descuentoPct?'<div style="font-size:10px;color:#dc2626">Dto '+q.descuentoPct+'%</div>':'')+
         '</div>'+
       '</div>'+
       '<div style="width:100%;display:flex;gap:4px;flex-wrap:wrap;padding-top:8px;border-top:1px solid #f0f4f8;margin-top:6px">'+
         (hasSnap
-          ? '<button class="btn btn-o btn-sm btn-editar" style="color:#0369a1;border-color:#bae6fd;font-size:11px">Editar</button>'+
-            '<button class="btn btn-o btn-sm btn-dupl" style="color:#065f46;border-color:#6ee7b7;font-size:11px">Duplicar</button>'
-          : '')+
-        '<button class="btn btn-o btn-sm btn-pdf" style="color:#365979;border-color:#93c5fd;font-size:11px">PDF</button>'+
-        '<button class="btn btn-o btn-sm btn-pdftec" style="color:var(--warn);border-color:var(--warn);font-size:11px">Tec.</button>'+
-        '<button class="btn btn-o btn-sm btn-pptx" style="color:#6d28d9;border-color:#7c3aed;font-size:11px">PPT</button>'+
-        '<button class="btn btn-o btn-sm btn-cont" style="color:#7c3aed;border-color:#c4b5fd;font-size:11px">Contrato</button>'+
-        '<button class="btn btn-o btn-sm btn-firma" style="color:#0369a1;border-color:#bae6fd;font-size:11px">Firmar</button>'+
-        '<button class="btn btn-o btn-sm btn-cobro" style="color:#16a34a;border-color:#bbf7d0;font-size:11px">Cobro</button>'+
-        '<button class="btn btn-danger btn-del" style="font-size:11px;padding:3px 8px;border-radius:5px;border:1.5px solid #fecaca">Elim</button>'+
+          ? '<button class="btn btn-o btn-sm btn-editar" style="color:#0369a1;border-color:#bae6fd;font-size:11px">✏️ Editar</button>'+
+            '<button class="btn btn-o btn-sm btn-dupl" style="color:#065f46;border-color:#6ee7b7;font-size:11px">📋 Duplicar</button>'
+          : '<span style="font-size:10px;color:#94a3b8;font-style:italic">sin snapshot</span>')+
+        '<button class="btn btn-o btn-sm btn-pdf" style="color:#365979;border-color:#93c5fd;font-size:11px">📄 PDF</button>'+
+        '<button class="btn btn-o btn-sm btn-pdftec" style="color:var(--warn);border-color:var(--warn);font-size:11px">👷 Téc.</button>'+
+        '<button class="btn btn-o btn-sm btn-pptx" style="color:#6d28d9;border-color:#7c3aed;font-size:11px">📊 PPT</button>'+
+        '<button class="btn btn-o btn-sm btn-cont" style="color:#7c3aed;border-color:#c4b5fd;font-size:11px">📄 Contrato</button>'+
+        '<button class="btn btn-o btn-sm btn-firma" style="color:#0369a1;border-color:#bae6fd;font-size:11px">✍️ Firma</button>'+
+        '<button class="btn btn-o btn-sm btn-cobro" style="color:#16a34a;border-color:#bbf7d0;font-size:11px">🧾 Cobro</button>'+
+        '<button class="btn btn-danger btn-del" style="font-size:11px;padding:3px 8px;border-radius:5px;border:1.5px solid #fecaca">🗑️</button>'+
       '</div>';
-        if(hasSnap){
+    if(hasSnap){
       card.querySelector('.btn-editar').addEventListener('click',(function(idx){return function(){
       loadQuoteFromHistory(idx,false); setTab('cotizar');
     };})(i));
