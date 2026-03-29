@@ -11,7 +11,7 @@
 <meta name="theme-color" content="#0d1f2e">
 <link rel="manifest" id="pwaManifest">
 <link rel="apple-touch-icon" id="appleTouchIcon">
-<title>SEDEC TECNOLOGÍAS — Cotizador Pro v5</title>
+<title>SEDEC TECNOLOGÍAS — Cotizador Pro v6.0</title>
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/pptxgenjs@3.12.0/dist/pptxgen.bundle.js"></script>
 <style>
@@ -325,7 +325,7 @@ body{-webkit-tap-highlight-color:transparent;-webkit-text-size-adjust:100%}
   <div class="hdr-logo">
     <img id="headerLogo" alt="Sedec">
     <span class="brand">SEDEC <span>TECNOLOGÍAS</span></span>
-    <span style="font-size:9px;opacity:.3;margin-left:8px;font-weight:400">v5.0</span>
+    <span style="font-size:9px;opacity:.3;margin-left:8px;font-weight:400">v6.0</span>
   </div>
   <div class="hdr-tabs">
     <button class="tab active" onclick="setTab('cotizar')">📋 Cotizar</button>
@@ -485,6 +485,8 @@ body{-webkit-tap-highlight-color:transparent;-webkit-text-size-adjust:100%}
       <button class="btn btn-o btn-sm" onclick="clearQuote()" style="color:#ef4444">🗑️ Limpiar</button>
       <button class="btn btn-o btn-sm" onclick="exportPDF()" style="color:#365979;border-color:#93c5fd">📄 PDF</button>
       <div id="editingBanner" style="display:none;background:#fef3c7;border:1.5px solid #f59e0b;border-radius:7px;padding:3px 10px;font-size:11px;font-weight:700;color:#92400e;align-items:center">✏️ Editando</div>
+      <div style="flex:1"></div>
+      <button onclick="aceptarCotizacion()" style="background:#16a34a;color:#fff;border:none;border-radius:8px;padding:8px 22px;font-size:13px;font-weight:800;cursor:pointer">✅ Aceptar</button>
       <div style="flex:1"></div>
       <button class="btn btn-o btn-sm" onclick="exportPDF()" style="color:#365979;border-color:#93c5fd">📄 PDF</button>
       <button onclick="aceptarCotizacion()" style="background:#16a34a;color:#fff;border:none;border-radius:8px;padding:8px 20px;font-size:13px;font-weight:800;cursor:pointer">✅ Aceptar</button>
@@ -1952,7 +1954,9 @@ var state = {
   catFilter: '',
   imgSearchTarget: null,
   pendingImgUrl: null,
-  currentQuoteId: null
+  currentQuoteId: null,
+  editingItemId: null,
+  editingCatId: null
 };
 
 // ============================================================
@@ -2117,12 +2121,18 @@ function addToQuote() {
     var moHours=0; var moRate=0;
   var imgEl=document.getElementById('editorImg');
   if (imgEl.src&&imgEl.style.display!=='none') { imgCache[state.selectedProduct.ref]=imgEl.src; saveImgs(); }
-  cat.items.push({
-    id:uid(),ref:state.selectedProduct.ref,desc:desc,precio:precio,qty:qty,
+  var _ni={id:uid(),ref:state.selectedProduct.ref,desc:desc,precio:precio,qty:qty,
     moType:state.selectedMO,moHours:moHours,moRate:moRate,moValue:mo,
     margin:margin,venta:precio*qty*(1+margin)+mo,
-    img:imgCache[state.selectedProduct.ref]||null
-  });
+    img:imgCache[state.selectedProduct.ref]||null};
+  if(state.editingItemId && state.editingCatId===cat.id){
+    var _ei=cat.items.findIndex(function(i){return i.id===state.editingItemId;});
+    if(_ei>=0){_ni.id=state.editingItemId;cat.items[_ei]=_ni;}else{cat.items.push(_ni);}
+    state.editingItemId=null;state.editingCatId=null;
+    toast('✅ Ítem actualizado','ok');
+  } else {
+    cat.items.push(_ni);
+  }
   renderQuote();
   clearEditor();
   document.getElementById('searchInput').value='';
@@ -2211,6 +2221,11 @@ function renderQuote() {
         mIn.addEventListener('change',(function(cid,iid){return function(){updateItemMargin(cid,iid,this.value);};})(cat.id,item.id));
         var pspan=document.createElement('span'); pspan.style.cssText='font-size:9px;color:var(--muted)'; pspan.textContent='%';
         tr.cells[6].querySelector('div').appendChild(mIn); tr.cells[6].querySelector('div').appendChild(pspan);
+        var edBtn=document.createElement('button'); edBtn.className='btn btn-o btn-sm';
+        edBtn.textContent='✏️'; edBtn.title='Editar ítem';
+        edBtn.style.cssText='padding:2px 5px;font-size:11px;margin-right:3px';
+        edBtn.addEventListener('click',(function(cid,iid){return function(){loadItemToEditor(cid,iid);};})(cat.id,item.id));
+        tr.cells[10].appendChild(edBtn);
         var rmBtn=document.createElement('button'); rmBtn.className='btn-danger'; rmBtn.textContent='✕';
         rmBtn.addEventListener('click',(function(cid,iid){return function(){removeItem(cid,iid);};})(cat.id,item.id));
         tr.cells[10].appendChild(rmBtn);
@@ -5494,6 +5509,57 @@ function aceptarCotizacion() {
   state.categories=[];state.activeCatId=null;
   renderCatUI();renderQuote();clearEditor();
   setTab('historial');
+}
+
+function loadItemToEditor(catId, itemId) {
+  var cat  = state.categories.find(function(c){ return c.id===catId; });
+  if (!cat) return;
+  var item = cat.items.find(function(i){ return i.id===itemId; });
+  if (!item) return;
+
+  // Seleccionar la categoría
+  state.activeCatId = catId;
+
+  // Buscar el producto en el catálogo
+  var prod = state.catalog.find(function(p){ return p.ref===item.ref; });
+  if (prod) {
+    state.selectedProduct = prod;
+    onSearch(item.ref);
+    // Resaltar en resultados
+    setTimeout(function(){
+      document.querySelectorAll('.r-item').forEach(function(el){
+        if (el.dataset.ref===item.ref) el.classList.add('sel');
+      });
+    }, 100);
+  }
+
+  // Cargar valores al editor
+  document.getElementById('editPrecio').value = item.precio;
+  document.getElementById('editQty').value    = item.qty;
+  document.getElementById('editDesc').value   = item.desc || '';
+
+  // MO
+  state.selectedMO = item.moType || 'Sin MO';
+  document.querySelectorAll('.mo-btn').forEach(function(b){
+    b.classList.toggle('on', b.getAttribute('data-mo')===state.selectedMO);
+  });
+  var moRow = document.getElementById('moDetailRow');
+  if (moRow) {
+    moRow.style.display = state.selectedMO!=='Sin MO' ? 'block' : 'none';
+    if (state.selectedMO!=='Sin MO') {
+      var moVal = document.getElementById('editMOvalue');
+      if (moVal) moVal.value = item.moValue || 60000;
+    }
+  }
+
+  // Margen
+  var mgIn = document.querySelector('.mg-in[data-cid="'+catId+'"]');
+  // Guardar el itemId que se está editando para reemplazarlo al agregar
+  state.editingItemId  = itemId;
+  state.editingCatId   = catId;
+
+  updatePreview();
+  toast('✏️ Ítem cargado — modifica y da Agregar para actualizar', 'ok');
 }
 </script>
 
