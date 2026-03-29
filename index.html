@@ -11,7 +11,7 @@
 <meta name="theme-color" content="#0d1f2e">
 <link rel="manifest" id="pwaManifest">
 <link rel="apple-touch-icon" id="appleTouchIcon">
-<title>SEDEC TECNOLOGÍAS — Cotizador Pro v6.0</title>
+<title>SEDEC TECNOLOGÍAS — Cotizador Pro v5</title>
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/pptxgenjs@3.12.0/dist/pptxgen.bundle.js"></script>
 <style>
@@ -31,7 +31,7 @@ body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--t
 .tab.active{background:var(--accent)}
 
 /* LAYOUT */
-.main{display:flex;height:calc(100vh - 56px);overflow:hidden}
+.main{display:none;height:calc(100vh - 56px);overflow:hidden}
 
 /* LEFT PANEL */
 .panel-l{width:320px;min-width:280px;background:#fff;border-right:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden}
@@ -325,7 +325,7 @@ body{-webkit-tap-highlight-color:transparent;-webkit-text-size-adjust:100%}
   <div class="hdr-logo">
     <img id="headerLogo" alt="Sedec">
     <span class="brand">SEDEC <span>TECNOLOGÍAS</span></span>
-    <span style="font-size:9px;opacity:.3;margin-left:8px;font-weight:400">v6.0</span>
+    <span style="font-size:9px;opacity:.3;margin-left:8px;font-weight:400">v5.0</span>
   </div>
   <div class="hdr-tabs">
     <button class="tab active" onclick="setTab('cotizar')">📋 Cotizar</button>
@@ -338,7 +338,7 @@ body{-webkit-tap-highlight-color:transparent;-webkit-text-size-adjust:100%}
 </div>
 
 <!-- TAB: COTIZAR -->
-<div class="main" id="tab-cotizar">
+<div class="main" id="tab-cotizar" style="display:none">
   <!-- LEFT: buscar -->
   <div class="panel-l">
     <div class="panel-hdr">
@@ -396,14 +396,9 @@ body{-webkit-tap-highlight-color:transparent;-webkit-text-size-adjust:100%}
               </div>
             </div>
             <div id="moDetailRow" style="display:none">
-              <div class="fl">
-                <label>Valor MO por ítem (COP)</label>
-                <input type="number" id="editMOvalue" value="60000" step="5000" min="0"
-                  oninput="updatePreview()"
-                  style="font-size:14px;font-weight:700;color:var(--brand-dark)">
-                <div style="font-size:10px;color:var(--muted);margin-top:2px">Valor fijo por ítem instalado</div>
-              </div>
-            </div>
+              <div class="frow">
+                <div class="fl"><label>Horas</label><input type="number" id="editMOhours" value="2" min="0.5" step="0.5" oninput="updatePreview()"></div>
+                <div class="fl"><label>Tarifa/hora (COP)</label><input type="number" id="editMOrate" value="40000" step="5000" oninput="updatePreview()"></div>
               </div>
             </div>
             <div class="preview-box">
@@ -483,13 +478,6 @@ body{-webkit-tap-highlight-color:transparent;-webkit-text-size-adjust:100%}
     <div class="act-bar">
       <button class="btn btn-o btn-sm" onclick="addFlete()">🚚 +Flete/Servicio</button>
       <button class="btn btn-o btn-sm" onclick="clearQuote()" style="color:#ef4444">🗑️ Limpiar</button>
-      <button class="btn btn-o btn-sm" onclick="exportPDF()" style="color:#365979;border-color:#93c5fd">📄 PDF</button>
-      <div id="editingBanner" style="display:none;background:#fef3c7;border:1.5px solid #f59e0b;border-radius:7px;padding:3px 10px;font-size:11px;font-weight:700;color:#92400e;align-items:center">✏️ Editando</div>
-      <div style="flex:1"></div>
-      <button onclick="aceptarCotizacion()" style="background:#16a34a;color:#fff;border:none;border-radius:8px;padding:8px 22px;font-size:13px;font-weight:800;cursor:pointer">✅ Aceptar</button>
-      <div style="flex:1"></div>
-      <button class="btn btn-o btn-sm" onclick="exportPDF()" style="color:#365979;border-color:#93c5fd">📄 PDF</button>
-      <button onclick="aceptarCotizacion()" style="background:#16a34a;color:#fff;border:none;border-radius:8px;padding:8px 20px;font-size:13px;font-weight:800;cursor:pointer">✅ Aceptar</button>
       <label id="descCtrl" style="display:flex;align-items:center;gap:6px;background:#fff8f8;border:1.5px solid #fca5a5;border-radius:8px;padding:3px 10px;cursor:pointer">
         <input type="checkbox" id="descCheck" onchange="toggleDescuento()" style="cursor:pointer">
         <span style="font-size:11px;font-weight:700;color:#dc2626">% Descuento</span>
@@ -597,7 +585,6 @@ body{-webkit-tap-highlight-color:transparent;-webkit-text-size-adjust:100%}
       <button id="finTab-resumen" onclick="setFinTab('resumen')" style="padding:7px 16px;font-size:12px;font-weight:700;border:none;border-bottom:3px solid var(--brand-dark);background:none;color:var(--brand-dark);cursor:pointer">📊 Resumen</button>
       <button id="finTab-pagar"   onclick="setFinTab('pagar')"   style="padding:7px 16px;font-size:12px;font-weight:700;border:none;border-bottom:3px solid transparent;background:none;color:var(--muted);cursor:pointer">📤 Por Pagar</button>
       <button id="finTab-cobrar"  onclick="setFinTab('cobrar')"  style="padding:7px 16px;font-size:12px;font-weight:700;border:none;border-bottom:3px solid transparent;background:none;color:var(--muted);cursor:pointer">📥 Por Cobrar</button>
-      <button id="finTab-proyectos" onclick="setFinTab('proyectos')" style="padding:7px 16px;font-size:12px;font-weight:700;border:none;border-bottom:3px solid transparent;background:none;color:var(--muted);cursor:pointer">🏗️ Proyectos</button>
     </div>
     <div id="finOrdenBar" style="display:none;gap:6px;align-items:center;margin-bottom:10px;flex-wrap:wrap">
       <span style="font-size:11px;color:var(--muted);font-weight:700">Ordenar:</span>
@@ -1953,10 +1940,7 @@ var state = {
   catPageN: 0,
   catFilter: '',
   imgSearchTarget: null,
-  pendingImgUrl: null,
-  currentQuoteId: null,
-  editingItemId: null,
-  editingCatId: null
+  pendingImgUrl: null
 };
 
 // ============================================================
@@ -2069,7 +2053,8 @@ function selectProduct(item) {
   document.getElementById('editDesc').value=item.desc;
   document.getElementById('editPrecio').value=item.precio;
   document.getElementById('editQty').value=1;
-  if(document.getElementById('editMOvalue')) document.getElementById('editMOvalue').value=60000;
+  document.getElementById('editMOhours').value=2;
+  document.getElementById('editMOrate').value=40000;
   document.getElementById('moDetailRow').style.display='none';
   var cached=imgCache[item.ref];
   document.getElementById('editorImg').style.display=cached?'block':'none';
@@ -2088,15 +2073,15 @@ function selectMO(btn) {
   btn.classList.add('on'); state.selectedMO=btn.getAttribute('data-mo');
   document.getElementById('moDetailRow').style.display=state.selectedMO!=='Sin MO'?'block':'none';
   if (state.selectedMO!=='Sin MO') {
-    var vals={'Técnico':60000,'Ayudante':40000,'Especialista':100000};
-    document.getElementById('editMOvalue').value=vals[state.selectedMO]||60000;
+    var rates={'Técnico':40000,'Ayudante':30000,'Especialista':65000};
+    document.getElementById('editMOrate').value=rates[state.selectedMO]||40000;
   }
   updatePreview();
 }
 
 function calcMO() {
   if (state.selectedMO==='Sin MO') return 0;
-  return parseFloat(document.getElementById('editMOvalue').value)||60000;
+  return (parseFloat(document.getElementById('editMOrate').value)||40000)*(parseFloat(document.getElementById('editMOhours').value)||2);
 }
 
 function updatePreview() {
@@ -2118,21 +2103,16 @@ function addToQuote() {
   var margin=getMargin(),precio=parseFloat(document.getElementById('editPrecio').value)||0;
   var qty=parseInt(document.getElementById('editQty').value)||1;
   var mo=calcMO(),desc=document.getElementById('editDesc').value;
-    var moHours=0; var moRate=0;
+  var moHours=state.selectedMO!=='Sin MO'?(parseFloat(document.getElementById('editMOhours').value)||0):0;
+  var moRate=state.selectedMO!=='Sin MO'?(parseFloat(document.getElementById('editMOrate').value)||0):0;
   var imgEl=document.getElementById('editorImg');
   if (imgEl.src&&imgEl.style.display!=='none') { imgCache[state.selectedProduct.ref]=imgEl.src; saveImgs(); }
-  var _ni={id:uid(),ref:state.selectedProduct.ref,desc:desc,precio:precio,qty:qty,
+  cat.items.push({
+    id:uid(),ref:state.selectedProduct.ref,desc:desc,precio:precio,qty:qty,
     moType:state.selectedMO,moHours:moHours,moRate:moRate,moValue:mo,
     margin:margin,venta:precio*qty*(1+margin)+mo,
-    img:imgCache[state.selectedProduct.ref]||null};
-  if(state.editingItemId && state.editingCatId===cat.id){
-    var _ei=cat.items.findIndex(function(i){return i.id===state.editingItemId;});
-    if(_ei>=0){_ni.id=state.editingItemId;cat.items[_ei]=_ni;}else{cat.items.push(_ni);}
-    state.editingItemId=null;state.editingCatId=null;
-    toast('✅ Ítem actualizado','ok');
-  } else {
-    cat.items.push(_ni);
-  }
+    img:imgCache[state.selectedProduct.ref]||null
+  });
   renderQuote();
   clearEditor();
   document.getElementById('searchInput').value='';
@@ -2221,11 +2201,6 @@ function renderQuote() {
         mIn.addEventListener('change',(function(cid,iid){return function(){updateItemMargin(cid,iid,this.value);};})(cat.id,item.id));
         var pspan=document.createElement('span'); pspan.style.cssText='font-size:9px;color:var(--muted)'; pspan.textContent='%';
         tr.cells[6].querySelector('div').appendChild(mIn); tr.cells[6].querySelector('div').appendChild(pspan);
-        var edBtn=document.createElement('button'); edBtn.className='btn btn-o btn-sm';
-        edBtn.textContent='✏️'; edBtn.title='Editar ítem';
-        edBtn.style.cssText='padding:2px 5px;font-size:11px;margin-right:3px';
-        edBtn.addEventListener('click',(function(cid,iid){return function(){loadItemToEditor(cid,iid);};})(cat.id,item.id));
-        tr.cells[10].appendChild(edBtn);
         var rmBtn=document.createElement('button'); rmBtn.className='btn-danger'; rmBtn.textContent='✕';
         rmBtn.addEventListener('click',(function(cid,iid){return function(){removeItem(cid,iid);};})(cat.id,item.id));
         tr.cells[10].appendChild(rmBtn);
@@ -2312,7 +2287,6 @@ function removeFleteFromCat(catId,fi) {
   renderQuote();
 }
 function clearQuote() {
-  state.currentQuoteId=null; var _b=document.getElementById('editingBanner'); if(_b)_b.style.display='none';
   if (!confirm('¿Limpiar toda la cotización?')) return;
   state.categories=[]; state.activeCatId=null;
   renderCatUI(); renderQuote();
@@ -2613,8 +2587,8 @@ function saveQuoteToHistory() {
       })
     };
   });
-  var _editIdx=state.currentQuoteId?history_list.findIndex(function(q){return q.id===state.currentQuoteId;}):-1;
-  var _entry={
+  history_list.unshift({
+    id:noCot,
     proyecto:document.getElementById('qProyecto').value||'Sin nombre',
     cliente:document.getElementById('qCliente').value||'—',
     ciudad:document.getElementById('qCiudad').value||'—',
@@ -2625,17 +2599,9 @@ function saveQuoteToHistory() {
     descuentoPct:(state.descuentoPct||0),
     descuentoMonto:(state.descuentoMonto||0),
     items:state.categories.reduce(function(s,c){return s+c.items.length;},0),
-    categories:catSnap
-  };
-  if(_editIdx>=0){
-    noCot=history_list[_editIdx].id;
-    Object.assign(history_list[_editIdx],_entry);
-    if(!history_list[_editIdx].status) history_list[_editIdx].status='pendiente';
-    state.currentQuoteId=null;
-  } else {
-    _entry.id=noCot; _entry.status='pendiente';
-    history_list.unshift(_entry);
-  }
+    status:'pendiente',
+    categories: catSnap
+  });
   if (history_list.length>100) history_list=history_list.slice(0,100);
   saveHistory();
   renderHistorial();
@@ -2648,7 +2614,6 @@ var STATUS_OPTS = [
   {val:'pendiente',   label:'⏳ Pendiente',    cls:'status-pendiente'},
   {val:'negociacion', label:'💬 En negociación',cls:'status-negociacion'},
   {val:'aceptada',    label:'✅ Aceptada',      cls:'status-aceptada'},
-  {val:'contratada',  label:'🏗️ Contratada',   cls:'status-contratada'},
   {val:'rechazada',   label:'❌ Rechazada',     cls:'status-rechazada'}
 ];
 function getStatusInfo(val) {
@@ -2656,31 +2621,10 @@ function getStatusInfo(val) {
 }
 function cycleStatus(idx) {
   var q = history_list[idx];
-  var statuses=['pendiente','negociacion','aceptada','contratada','rechazada'];
+  var statuses=['pendiente','negociacion','aceptada','rechazada'];
   var cur = statuses.indexOf(q.status||'pendiente');
-  // Solo actualiza UI — muestra estado provisional + botón Aplicar
-  var nextStatus = statuses[(cur+1)%statuses.length];
-  q._pendingStatus = nextStatus;
-  renderHistorial();
-}
-
-function applyStatus(idx) {
-  var q = history_list[idx];
-  if (!q._pendingStatus) return;
-  q.status = q._pendingStatus;
-  delete q._pendingStatus;
+  q.status = statuses[(cur+1)%statuses.length];
   saveHistory();
-  renderHistorial();
-  toast('Estado actualizado: ' + q.status, 'ok');
-  // Si se acepta → crear proyecto en Finanzas
-  if (q.status === 'aceptada' || q.status === 'contratada') {
-    _crearProyectoDesdeHistorial(idx);
-  }
-}
-
-function cancelStatus(idx) {
-  var q = history_list[idx];
-  delete q._pendingStatus;
   renderHistorial();
 }
 function renderHistorial() {
@@ -2703,13 +2647,11 @@ function renderHistorial() {
         '<div class="hist-detail">'+q.cliente+' · '+q.ciudad+' · '+q.fecha+' · '+q.items+' ítem(s)</div>'+
       '</div>'+
       '<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">'+
-        '<button class="status-badge '+(q._pendingStatus?getStatusInfo(q._pendingStatus).cls:si.cls)+'" onclick="cycleStatus('+i+')" style="cursor:pointer">'+(q._pendingStatus?getStatusInfo(q._pendingStatus).label:si.label)+'</button>'+
-        (q._pendingStatus
-          ? '<button class="btn-aplicar-estado" onclick="applyStatus('+i+')">✅ Aplicar</button>'+
-            '<button onclick="cancelStatus('+i+')" style="background:none;border:none;font-size:13px;cursor:pointer;color:#94a3b8" title="Cancelar">✕</button>'
-          : ''  )+
-        '<button class="btn btn-o btn-sm btn-editar" style="color:#0369a1;border-color:#bae6fd;font-size:11px">✏️ Editar</button>'+
-        '<button class="btn btn-o btn-sm btn-dupl" style="color:#065f46;border-color:#6ee7b7;font-size:11px">📋 Duplicar</button>'+
+        '<button class="status-badge '+si.cls+'" title="Click para cambiar estado">'+si.label+'</button>'+
+        (hasSnap
+          ? '<button class="btn btn-o btn-sm btn-editar" style="color:#0369a1;border-color:#bae6fd;font-size:11px" title="Cargar esta cotización para editar">✏️ Editar</button>'+
+            '<button class="btn btn-o btn-sm btn-dupl" style="color:#065f46;border-color:#6ee7b7;font-size:11px" title="Duplicar como nueva cotización">📋 Duplicar</button>'
+          : '<span style="font-size:10px;color:#94a3b8;font-style:italic">sin snapshot</span>')+
         '<button class="btn btn-o btn-sm btn-cont" style="color:#7c3aed;border-color:#c4b5fd;font-size:11px">📄 Contrato</button>'+
         '<button class="btn btn-danger btn-del" style="font-size:11px;padding:3px 8px;border-radius:5px;border:1.5px solid #fecaca" title="Eliminar del historial">🗑️</button>'+
         '<div class="hist-total">'+fmt(q.total)+'</div>'+
@@ -3154,7 +3096,7 @@ function exportPDF() {
   '<div class="page"><div class="page-hdr"><img src="'+LOGO_LIGHT+'" class="page-logo" alt="Sedec"><div class="page-meta">PROPUESTA TÉCNICA Y COMERCIAL<strong>'+noCot+'</strong>'+fecha+' · '+ciudad+'</div></div>'+
   '<table class="qt"><thead><tr><th style="width:28px">#</th><th style="width:56px">Img</th><th>Referencia</th><th>Descripción</th><th class="r" style="width:46px">Cant.</th><th class="r" style="width:100px">P.Unit.</th><th class="r" style="width:110px">Total</th></tr></thead><tbody>'+allRows+'</tbody></table>'+
   '<div class="tot-wrap"><div class="tot-box"><div class="trow"><span>Total productos:</span><span>'+fmt(totVenta)+'</span></div><div class="trow big"><span>TOTAL:</span><span>'+fmt(totVenta)+'</span></div></div></div>'+
-  '<div class="terms">'+'<b>Garantías SEDEC Tecnologías</b>'+'<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:8px">'+'<div style="display:flex;align-items:flex-start;gap:5px"><span style="color:#16a34a;font-weight:700;flex-shrink:0">✅</span><span><b>18 meses de garantía</b> en programación, configuración y software.</span></div>'+'<div style="display:flex;align-items:flex-start;gap:5px"><span style="color:#16a34a;font-weight:700;flex-shrink:0">✅</span><span><b>12 meses de garantía</b> en equipos y hardware de fábrica.</span></div>'+'<div style="display:flex;align-items:flex-start;gap:5px"><span style="color:#16a34a;font-weight:700;flex-shrink:0">✅</span><span><b>Mano de obra especializada y certificada</b> con formación en seguridad y altura.</span></div>'+'<div style="display:flex;align-items:flex-start;gap:5px"><span style="color:#16a34a;font-weight:700;flex-shrink:0">✅</span><span><b>Cumplimiento estricto</b> de los tiempos y plazos pactados en el contrato.</span></div>'+'<div style="display:flex;align-items:flex-start;gap:5px"><span style="color:#16a34a;font-weight:700;flex-shrink:0">✅</span><span><b>Soporte técnico post-instalación</b> disponible durante toda la vigencia de la garantía.</span></div>'+'<div style="display:flex;align-items:flex-start;gap:5px"><span style="color:#16a34a;font-weight:700;flex-shrink:0">✅</span><span><b>Materiales certificados</b> y marcas reconocidas en el mercado.</span></div>'+'<div style="display:flex;align-items:flex-start;gap:5px"><span style="color:#16a34a;font-weight:700;flex-shrink:0">✅</span><span><b>Empresa registrada</b> con experiencia comprobada en seguridad electrónica.</span></div>'+'<div style="display:flex;align-items:flex-start;gap:5px"><span style="color:#16a34a;font-weight:700;flex-shrink:0">✅</span><span>Entregamos el espacio en <b>perfectas condiciones</b> de orden y limpieza.</span></div>'+'</div>'+'<div style="border-top:1px solid #e2e8f0;margin-top:6px;padding-top:6px;font-size:9px;color:#94a3b8">'+'Precios en COP incluyen IVA 19%. Cotización válida 30 días. Forma de pago: 50% anticipo, 50% contra entrega. '+'Para más información: contacto@sedectecnologias.com'+'</div>'+'</div>'+
+  '<div class="terms"><b>Términos y condiciones</b>Precios en COP e incluyen IVA del 19%. Garantía según fabricante. Instalación no incluida salvo indicación expresa. Cotización válida por 30 días. Forma de pago: 50% anticipo, 50% contra entrega.</div>'+
   '<div class="footer-bar"><div><strong>Juan Sebastián Cerón Ortega</strong><span>Director de Operaciones · Sedec Tecnologías</span></div><div class="fdiv"></div><div style="text-align:center"><strong>+57 300 451 2259</strong><span>sedectechs@gmail.com</span></div><div class="fdiv"></div><div style="text-align:right"><strong>www.sedec.co</strong><span>Cra 24 #17-74 Of.505 · Pasto, Nariño</span></div></div>'+
   '<div style="text-align:center;margin-top:16px" class="no-print"><button onclick="window.print()" style="background:#365979;color:#fff;border:none;padding:11px 32px;border-radius:7px;cursor:pointer;font-size:13px;font-weight:700">🖨️ Imprimir / Guardar PDF</button></div>'+
   '</div></body></html>');
@@ -3446,9 +3388,7 @@ function loadQuoteFromHistory(idx, duplicate) {
   renderQuote();
   clearEditor();
   setTab('cotizar');
-  state.currentQuoteId=duplicate?null:q.id;
-  var b=document.getElementById('editingBanner'); if(b) b.style.display=state.currentQuoteId?'flex':'none';
-  toast(duplicate?'📋 Cotización duplicada — edita y guarda':'✏️ Editando: '+q.proyecto,'ok');
+  toast(duplicate ? '📋 Cotización duplicada — edita y guarda' : '✏️ Cotización cargada para editar', 'ok');
 }
 
 // ============================================================
@@ -4523,6 +4463,7 @@ buildCatalog();
 onSearch('');
 renderHistorial();
 updateStorageBar();
+setTab('cotizar');
 console.log('SEDEC Cotizador v5 cargado. Refs:', state.catalog.length, '| Historial:', history_list.length, '| Imgs en caché:', Object.keys(imgCache).length);
 
 // ══════════════════════════════════════════════════════
@@ -4857,14 +4798,6 @@ var finanzas_list = (function(){ try{return JSON.parse(localStorage.getItem('sed
 var finTab_active = 'resumen';
 var finOrden      = 'fecha_asc';
 
-
-// ── Proyectos en Finanzas ──
-var proyectos_fin = (function(){
-  try { return JSON.parse(localStorage.getItem('sedec_proyectos_fin_v1')||'[]'); } catch(e){ return []; }
-})();
-function saveProyectosFin() {
-  try { localStorage.setItem('sedec_proyectos_fin_v1', JSON.stringify(proyectos_fin)); } catch(e){}
-}
 function saveFinanzas() { try{localStorage.setItem('sedec_finanzas_v1',JSON.stringify(finanzas_list));}catch(e){} }
 
 function diasHasta(fechaStr) {
@@ -4904,8 +4837,8 @@ function sortFinanzas(lista){
 
 function setFinTab(tab) {
   finTab_active = tab;
-  var colors={resumen:'var(--brand-dark)',pagar:'#dc2626',cobrar:'#16a34a',proyectos:'#7c3aed'};
-  ['resumen','pagar','cobrar','proyectos'].forEach(function(t){
+  var colors={resumen:'var(--brand-dark)',pagar:'#dc2626',cobrar:'#16a34a'};
+  ['resumen','pagar','cobrar'].forEach(function(t){
     var btn=document.getElementById('finTab-'+t);
     if(!btn) return;
     var act=t===tab;
@@ -4917,9 +4850,6 @@ function setFinTab(tab) {
   var ordenBar=document.getElementById('finOrdenBar');
   if(addBtns)  addBtns.style.display  = tab==='resumen'?'none':'flex';
   if(ordenBar) ordenBar.style.display = tab==='resumen'?'none':'flex';
-  if(tab==='proyectos') { renderProyectosFin(); return; }
-  if(addBtns) addBtns.style.display=(tab==='resumen')?'none':'flex';
-  if(ordenBar) ordenBar.style.display=(tab==='resumen')?'none':'flex';
   if(tab!=='resumen') setFinOrden(finOrden);
   renderFinanzas();
 }
@@ -5296,271 +5226,6 @@ function exportProyectoPDF(pi){
 }
 
 // ── Sync Drive: incluir finanzas + proyectos ──────────────
-
-// ── Crear proyecto en Finanzas desde cotización aceptada ──
-function _crearProyectoDesdeHistorial(idx) {
-  var q = history_list[idx];
-  if (!q) return;
-
-  // ¿Ya existe proyecto para esta cotización?
-  var existing = proyectos_fin.find(function(p){ return p.cotId === q.id; });
-  if (existing) {
-    toast('El proyecto ya existe en Finanzas', 'ok');
-    return;
-  }
-
-  // Calcular presupuesto MO y Materiales desde la cotización
-  var presupMO = 0, presupMat = 0;
-  if (q.categories) {
-    q.categories.forEach(function(cat){
-      (cat.items||[]).forEach(function(item){
-        presupMO  += (item.moValue || 0);
-        presupMat += (item.precio * (item.qty||1));
-      });
-    });
-  }
-
-  var proyecto = {
-    id:        'PF-' + Date.now().toString().slice(-8),
-    cotId:     q.id,
-    nombre:    q.proyecto || 'Sin nombre',
-    cliente:   q.cliente  || '—',
-    estado:    q.status,
-    totalCot:  q.total || 0,
-    presupMO:  presupMO,
-    presupMat: presupMat,
-    abonos:    [],
-    gastos:    [],
-    creado:    new Date().toLocaleDateString('es-CO')
-  };
-
-  proyectos_fin.push(proyecto);
-  saveProyectosFin();
-  toast('🏗️ Proyecto "'+proyecto.nombre+'" creado en Finanzas', 'ok');
-}
-
-function renderProyectosFin() {
-  var panel = document.getElementById('finanzasContenido');
-  if (!panel) return;
-
-  if (!proyectos_fin.length) {
-    panel.innerHTML =
-      '<div style="text-align:center;padding:50px;color:var(--muted)">' +
-        '<div style="font-size:40px;margin-bottom:10px">🏗️</div>' +
-        '<div style="font-size:14px;font-weight:700;margin-bottom:6px">No hay proyectos aún</div>' +
-        '<div style="font-size:12px">Cuando aceptes una cotización en Historial<br>aparecerá aquí como proyecto</div>' +
-      '</div>';
-    return;
-  }
-
-  panel.innerHTML = proyectos_fin.map(function(p, pi) {
-    var totGastos  = (p.gastos||[]).reduce(function(s,g){ return s+g.valor; },0);
-    var totAbonos  = (p.abonos||[]).reduce(function(s,a){ return s+a.valor; },0);
-    var gastadoMO  = (p.gastos||[]).filter(function(g){ return g.cat==='mo'; }).reduce(function(s,g){ return s+g.valor; },0);
-    var gastadoMat = (p.gastos||[]).filter(function(g){ return g.cat==='mat'; }).reduce(function(s,g){ return s+g.valor; },0);
-    var dispMO     = (p.presupMO||0) - gastadoMO;
-    var dispMat    = (p.presupMat||0) - gastadoMat;
-    var saldo      = totAbonos - totGastos;
-
-    function barra(label, disp, presup, color) {
-      if (!presup) return '';
-      var pct = Math.min(100, Math.max(0, Math.round(disp/presup*100)));
-      var dc  = disp >= 0 ? color : '#dc2626';
-      return '<div style="background:#f8fafc;border-radius:8px;padding:10px 12px;flex:1;border:1px solid #e2e8f0">' +
-        '<div style="font-size:10px;font-weight:700;color:'+color+';margin-bottom:4px">'+label+'</div>' +
-        '<div style="font-size:16px;font-weight:800;color:'+dc+'">'+fmt(disp)+'</div>' +
-        '<div style="font-size:9px;color:var(--muted)">de '+fmt(presup)+' presupuestado</div>' +
-        '<div style="background:#e5e7eb;border-radius:3px;height:4px;margin-top:6px">' +
-          '<div style="background:'+color+';height:4px;width:'+pct+'%;border-radius:3px"></div>' +
-        '</div>' +
-      '</div>';
-    }
-
-    var gastosHTML = (p.gastos||[]).slice().reverse().slice(0,5).map(function(g) {
-      return '<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid #f0f4f8;font-size:11px">' +
-        '<div>' +
-          '<span style="font-weight:700;color:var(--brand-dark)">'+(g.cat==='mo'?'👷 MO':'📦 '+(g.cat==='mat'?'Material':g.cat))+'</span>' +
-          (g.tecnico?' <span style="color:#7c3aed;font-size:10px">'+g.tecnico+'</span>':'') +
-          ' — <span style="color:var(--muted)">'+g.desc+'</span>' +
-          '<div style="font-size:10px;color:var(--muted)">'+g.fecha+'</div>' +
-        '</div>' +
-        '<span style="font-weight:800;color:#dc2626">-'+fmt(g.valor)+'</span>' +
-      '</div>';
-    }).join('');
-
-    var abonosHTML = (p.abonos||[]).slice().reverse().slice(0,3).map(function(a) {
-      return '<div style="display:flex;justify-content:space-between;font-size:11px;padding:4px 0;border-bottom:1px solid #f0fdf4">' +
-        '<span style="color:var(--muted)">'+a.fecha+(a.nota?' — '+a.nota:'')+'</span>' +
-        '<span style="font-weight:700;color:#16a34a">+'+fmt(a.valor)+'</span>' +
-      '</div>';
-    }).join('');
-
-    return '<div style="background:#fff;border-radius:12px;border:1px solid var(--border);margin-bottom:14px;overflow:hidden">' +
-      // Header
-      '<div style="background:var(--brand-dark);color:#fff;padding:12px 16px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">' +
-        '<div>' +
-          '<div style="font-size:14px;font-weight:800">🏗️ '+p.nombre+'</div>' +
-          '<div style="font-size:10px;opacity:.7">'+p.cliente+' · '+p.creado+' · Cot: '+p.cotId+'</div>' +
-        '</div>' +
-        '<div style="text-align:right">' +
-          '<div style="font-size:10px;opacity:.7">Valor cotización</div>' +
-          '<div style="font-size:15px;font-weight:800">'+fmt(p.totalCot)+'</div>' +
-        '</div>' +
-      '</div>' +
-      // Barras de presupuesto
-      '<div style="display:flex;gap:8px;padding:12px 16px;flex-wrap:wrap">' +
-        barra('👷 MO disponible', dispMO, p.presupMO, '#7c3aed') +
-        barra('📦 Materiales disponibles', dispMat, p.presupMat, '#0369a1') +
-        '<div style="background:#f0fdf4;border-radius:8px;padding:10px 12px;flex:1;border:1px solid #86efac">' +
-          '<div style="font-size:10px;font-weight:700;color:#16a34a;margin-bottom:4px">💵 Saldo</div>' +
-          '<div style="font-size:16px;font-weight:800;color:'+(saldo>=0?'#16a34a':'#dc2626')+'">'+fmt(saldo)+'</div>' +
-          '<div style="font-size:9px;color:var(--muted)">Abonos - Gastos</div>' +
-        '</div>' +
-      '</div>' +
-      // Abonos cliente
-      '<div style="padding:0 16px 10px">' +
-        '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">' +
-          '<span style="font-size:12px;font-weight:700;color:#16a34a">💵 Abonos del cliente</span>' +
-          '<div style="display:flex;gap:6px;align-items:center">' +
-            '<span style="font-size:13px;font-weight:800;color:#16a34a">'+fmt(totAbonos)+'</span>' +
-            '<button onclick="_pfAbono('+pi+')" style="background:#16a34a;color:#fff;border:none;border-radius:6px;padding:3px 10px;font-size:11px;font-weight:700;cursor:pointer">+ Abono</button>' +
-          '</div>' +
-        '</div>' +
-        (abonosHTML || '<div style="font-size:11px;color:var(--muted)">Sin abonos</div>') +
-      '</div>' +
-      // Gastos
-      '<div style="padding:0 16px 10px">' +
-        '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">' +
-          '<span style="font-size:12px;font-weight:700;color:#dc2626">💸 Gastos</span>' +
-          '<div style="display:flex;gap:6px">' +
-            '<button onclick="_pfGasto('+pi+',\'mo\')" style="background:#f5f3ff;color:#7c3aed;border:1.5px solid #c4b5fd;border-radius:6px;padding:3px 10px;font-size:11px;font-weight:700;cursor:pointer">+ MO</button>' +
-            '<button onclick="_pfGasto('+pi+',\'mat\')" style="background:#eff6ff;color:#0369a1;border:1.5px solid #93c5fd;border-radius:6px;padding:3px 10px;font-size:11px;font-weight:700;cursor:pointer">+ Material</button>' +
-            '<button onclick="_pfGasto('+pi+',\'otro\')" style="background:#f8fafc;color:var(--muted);border:1.5px solid var(--border);border-radius:6px;padding:3px 10px;font-size:11px;cursor:pointer">+ Otro</button>' +
-          '</div>' +
-        '</div>' +
-        (gastosHTML || '<div style="font-size:11px;color:var(--muted)">Sin gastos</div>') +
-        ((p.gastos||[]).length>5 ? '<div style="font-size:10px;color:var(--muted);margin-top:4px">+'+(p.gastos.length-5)+' más...</div>' : '') +
-      '</div>' +
-    '</div>';
-  }).join('');
-}
-
-function _pfAbono(pi) {
-  var monto = parseFloat(prompt('Valor del abono (COP):',''));
-  if (!monto || monto<=0) return;
-  var nota = prompt('Nota (opcional):','') || '';
-  var fecha = new Date().toLocaleDateString('es-CO');
-  if (!proyectos_fin[pi].abonos) proyectos_fin[pi].abonos = [];
-  proyectos_fin[pi].abonos.push({ id:'A-'+Date.now().toString().slice(-8), valor:monto, nota:nota, fecha:fecha });
-  saveProyectosFin();
-  renderProyectosFin();
-  toast('💵 Abono registrado: '+fmt(monto),'ok');
-}
-
-function _pfGasto(pi, cat) {
-  var p = proyectos_fin[pi];
-  // Selector de técnico solo para MO
-  var tecnico = '';
-  if (cat==='mo') {
-    var tecs = (tec_config && tec_config.tecnicos) ? tec_config.tecnicos.map(function(t){return t.nombre;}) : [];
-    if (tecs.length) {
-      tecnico = prompt('Tecnico (' + tecs.join(', ') + '). Nombre exacto:', '');
-      if (tecnico===null) return;
-    }
-    // Mostrar disponible
-    var gastadoMO = (p.gastos||[]).filter(function(g){return g.cat==='mo';}).reduce(function(s,g){return s+g.valor;},0);
-    var dispMO = (p.presupMO||0) - gastadoMO;
-    var infoMO = 'MO disp: '+fmt(dispMO)+'  Presup: '+fmt(p.presupMO||0);
-    var monto = parseFloat(prompt(infoMO+'Valor del gasto MO (COP):',''));
-    if (!monto || monto<=0) return;
-    var desc = prompt('Descripción del trabajo:','') || 'Mano de obra';
-    var fecha = new Date().toLocaleDateString('es-CO');
-    if (!p.gastos) p.gastos = [];
-    p.gastos.push({ id:'G-'+Date.now().toString().slice(-8), cat:'mo', valor:monto, desc:desc, tecnico:tecnico, fecha:fecha });
-  } else {
-    var catLabel = cat==='mat' ? 'Material' : 'Otro gasto';
-    if (cat==='mat') {
-      var gastadoMat = (p.gastos||[]).filter(function(g){return g.cat==='mat';}).reduce(function(s,g){return s+g.valor;},0);
-      var dispMat = (p.presupMat||0) - gastadoMat;
-      var infoMat = 'Mat disp: '+fmt(dispMat)+'  Presup: '+fmt(p.presupMat||0);
-      var monto = parseFloat(prompt(infoMat+'Valor del gasto en '+catLabel+' (COP):',''));
-    } else {
-      var monto = parseFloat(prompt('Valor del gasto (COP):',''));
-    }
-    if (!monto || monto<=0) return;
-    var desc = prompt('Descripción:','') || catLabel;
-    var fecha = new Date().toLocaleDateString('es-CO');
-    if (!p.gastos) p.gastos = [];
-    p.gastos.push({ id:'G-'+Date.now().toString().slice(-8), cat:cat, valor:monto, desc:desc, fecha:fecha });
-  }
-  saveProyectosFin();
-  renderProyectosFin();
-  toast('💸 Gasto registrado','ok');
-}
-
-function aceptarCotizacion() {
-  var totVenta=state.categories.reduce(function(s,c){
-    return s+c.items.reduce(function(ss,i){return ss+i.venta;},0)+c.fletes.reduce(function(ss,f){return ss+f.valor;},0);
-  },0);
-  if(totVenta===0){toast('Agrega productos antes de aceptar','err');return;}
-  var isEdit=!!state.currentQuoteId;
-  saveQuoteToHistory();
-  toast(isEdit?'✅ Cotización actualizada':'✅ Cotización guardada en Historial','ok');
-  state.categories=[];state.activeCatId=null;
-  renderCatUI();renderQuote();clearEditor();
-  setTab('historial');
-}
-
-function loadItemToEditor(catId, itemId) {
-  var cat  = state.categories.find(function(c){ return c.id===catId; });
-  if (!cat) return;
-  var item = cat.items.find(function(i){ return i.id===itemId; });
-  if (!item) return;
-
-  // Seleccionar la categoría
-  state.activeCatId = catId;
-
-  // Buscar el producto en el catálogo
-  var prod = state.catalog.find(function(p){ return p.ref===item.ref; });
-  if (prod) {
-    state.selectedProduct = prod;
-    onSearch(item.ref);
-    // Resaltar en resultados
-    setTimeout(function(){
-      document.querySelectorAll('.r-item').forEach(function(el){
-        if (el.dataset.ref===item.ref) el.classList.add('sel');
-      });
-    }, 100);
-  }
-
-  // Cargar valores al editor
-  document.getElementById('editPrecio').value = item.precio;
-  document.getElementById('editQty').value    = item.qty;
-  document.getElementById('editDesc').value   = item.desc || '';
-
-  // MO
-  state.selectedMO = item.moType || 'Sin MO';
-  document.querySelectorAll('.mo-btn').forEach(function(b){
-    b.classList.toggle('on', b.getAttribute('data-mo')===state.selectedMO);
-  });
-  var moRow = document.getElementById('moDetailRow');
-  if (moRow) {
-    moRow.style.display = state.selectedMO!=='Sin MO' ? 'block' : 'none';
-    if (state.selectedMO!=='Sin MO') {
-      var moVal = document.getElementById('editMOvalue');
-      if (moVal) moVal.value = item.moValue || 60000;
-    }
-  }
-
-  // Margen
-  var mgIn = document.querySelector('.mg-in[data-cid="'+catId+'"]');
-  // Guardar el itemId que se está editando para reemplazarlo al agregar
-  state.editingItemId  = itemId;
-  state.editingCatId   = catId;
-
-  updatePreview();
-  toast('✏️ Ítem cargado — modifica y da Agregar para actualizar', 'ok');
-}
 </script>
 
 <!-- ══ MODAL: Editar producto del catálogo ══ -->
