@@ -559,18 +559,44 @@ body{-webkit-tap-highlight-color:transparent;-webkit-text-size-adjust:100%}
     text-align:center;
   }
 }
-  /* --- MEJORA PARA SELECCIÓN EN IPHONE Y TABLET --- */
-#resultsList div, 
-.search-results div, 
-[onclick], 
-.product-item,
-.msh-item {
-    cursor: pointer !important;
-    touch-action: manipulation !important;
-    min-height: 48px !important;
-    padding: 12px 15px !important;
-    border-bottom: 1px solid #eee;
-    -webkit-tap-highlight-color: transparent;
+ /* --- DISEÑO SEPARADO: PC VS IPHONE --- */
+
+/* 1. Estilo para Computadora (Escritorio) */
+@media (min-width: 769px) {
+    #resultsList div, .search-results div {
+        padding: 5px 10px !important; /* Volver al tamaño pequeño y fino */
+        font-size: 13px !important;
+        border-bottom: 1px solid #f0f0f0;
+        cursor: pointer;
+        line-height: 1.2;
+    }
+    #resultsList div:hover {
+        background-color: #eef6ff !important;
+    }
+}
+
+/* 2. Estilo para iPhone y Tablets (Táctil) */
+@media (max-width: 768px) {
+    #resultsList div, .search-results div, .product-item {
+        padding: 16px 15px !important; /* Espacio grande para el dedo */
+        min-height: 55px !important;
+        font-size: 16px !important;
+        border-bottom: 1px solid #ddd;
+        touch-action: manipulation !important; /* Quita el retraso de clic en iOS */
+        -webkit-tap-highlight-color: rgba(0,0,0,0);
+        display: block !important;
+        background-color: #fff;
+    }
+    #resultsList div:active {
+        background-color: #f0f0f0;
+    }
+}
+
+/* 3. Asegurar que la lista sea visible y clicable */
+#resultsList {
+    position: relative;
+    z-index: 1000;
+    background: white;
 }
 </style>
 </head>
