@@ -559,6 +559,19 @@ body{-webkit-tap-highlight-color:transparent;-webkit-text-size-adjust:100%}
     text-align:center;
   }
 }
+  /* --- MEJORA PARA SELECCIÓN EN IPHONE Y TABLET --- */
+#resultsList div, 
+.search-results div, 
+[onclick], 
+.product-item,
+.msh-item {
+    cursor: pointer !important;
+    touch-action: manipulation !important;
+    min-height: 48px !important;
+    padding: 12px 15px !important;
+    border-bottom: 1px solid #eee;
+    -webkit-tap-highlight-color: transparent;
+}
 </style>
 </head>
 <body style="color-scheme:light !important;background:#fff !important">
@@ -7122,65 +7135,116 @@ window.addEventListener('load', function(){
 // FIREBASE IMGCACHE SYNC — sin necesidad de Drive
 // ════════════════════════════════════════════════════════════════
 
-async function _mshSyncImgs() {
-  if (!_mshProduct) {
-    toast('Error: abre el sheet de un producto primero', 'err');
-    return;
-  }
-  var productRef = _mshProduct.ref;
-  toast('Buscando: ' + productRef.substring(0,20) + '...', '');
-
-  if (!window._fbReady || !window._fbStorage) {
-    toast('Firebase cargando... espera 3 seg y vuelve a intentar', 'err');
-    return;
-  }
-
+async function _mshSyncImgs(productRef) {
+  if(!productRef) return;
+  showLoading(true); // Enciende la línea azul
   try {
-    var fileName   = 'productos/' + productRef.replace(/[^a-zA-Z0-9_-]/g,'_') + '.jpg';
-    toast('Buscando en: ' + fileName, '');
-    var storageRef = window._fbStorage.ref(fileName);
-    var url        = await storageRef.getDownloadURL();
-    imgCache[productRef] = url;
+    var storageRef = firebase.storage().ref().child('productos/' + productRef);
+    var url = await storageRef.getDownloadURL();
+    
+    // Cache buster: Obligamos al iPhone a bajar la foto nueva y no usar la vieja
+    var freshUrl = url + (url.includes('?') ? '&' : '?') + 't=' + Date.now();
+    
+    imgCache[productRef] = freshUrl;
     saveImgs();
+    
     var mshImg = document.getElementById('msh-img');
-    var mshPh  = document.getElementById('msh-imgph');
-    if (mshImg) { mshImg.src = url; mshImg.style.display = 'block'; }
-    if (mshPh)  mshPh.style.display = 'none';
-    toast('✅ Imagen cargada correctamente', 'ok');
+    if (mshImg) { mshImg.src = freshUrl; mshImg.style.display = 'block'; }
+    
+    toast('✅ Imagen de la nube cargada', 'ok');
   } catch(e) {
-    if (e.code === 'storage/object-not-found') {
-      toast('Sin imagen en Firebase para: ' + productRef.substring(0,20), '');
-    } else {
-      toast('Error Firebase: ' + (e.code||e.message||'desconocido'), 'err');
-    }
+    console.log("No hay imagen previa o error de red");
+  } finally {
+    showLoading(false); // <--- ESTO QUITA LA LÍNEA AZUL SIEMPRE
   }
 }
 
 function _mshHandleImg(event) {
   var file = event.target.files[0];
-  if (!file || !_mshProduct) return;
+  var prod = _mshProduct || window._mshProduct;
+  if (!file || !prod) { toast('Error: selecciona un producto primero','err'); return; }
 
-  var productRef = _mshProduct.ref;
+  _mshProduct = prod; 
+  window._mshProduct = prod;
+  var productRef = prod.ref;
 
-  // Apuntar al producto del sheet para que uploadImgToDrive sepa a qué ref subir
-  state.selectedProduct = _mshProduct;
+  showLoading(true); // Enciende la línea azul
 
-  // Mostrar preview inmediato con FileReader mientras sube
   var reader = new FileReader();
-  reader.onload = function(ev) {
-    var mshImg = document.getElementById('msh-img');
-    var mshPh  = document.getElementById('msh-imgph');
-    if (mshImg) { mshImg.src = ev.target.result; mshImg.style.display = 'block'; }
-    if (mshPh)  mshPh.style.display = 'none';
-    toast('⏳ Subiendo imagen a Firebase...', '');
+  reader.onload = async function(ev) {
+    try {
+      // Metadatos para compatibilidad total con iOS/iPhone 15
+      var metadata = { contentType: file.type || 'image/jpeg' };
+      var storageRef = firebase.storage().ref().child('productos/' + productRef);
+      
+      await storageRef.put(file, metadata);
+      var url = await storageRef.getDownloadURL();
+      
+      var finalUrl = url + (url.includes('?') ? '&' : '?') + 't=' + Date.now();
+      
+      imgCache[productRef] = finalUrl;
+      saveImgs();
+
+      var mshImg = document.getElementById('msh-img');
+      if (mshImg) { 
+          mshImg.src = finalUrl; 
+          mshImg.style.display = 'block'; 
+      }
+      
+      toast('✅ Imagen sincronizada en Sedec', 'ok');
+    } catch(e) {
+      console.error("Error Sedec:", e);
+      toast('Error al subir: ' + e.message, 'err');
+    } finally {
+      showLoading(false); // <--- ESTO QUITA LA LÍNEA AZUL SIEMPRE
+    }
   };
   reader.readAsDataURL(file);
+}
 
-  // Subir a Firebase
-  onImgUpload(event);
+function _mshHandleImg(event) {
+  var file = event.target.files[0];
+  var prod = _mshProduct || window._mshProduct;
+  if (!file || !prod) { toast('Error: selecciona un producto primero','err'); return; }
 
-  // Limpiar input para permitir resubir el mismo archivo
-  event.target.value = '';
+  _mshProduct = prod; 
+  window._mshProduct = prod;
+  var productRef = prod.ref;
+
+  showLoading(true); // <--- ENCIENDE LA LÍNEA AZUL
+
+  var reader = new FileReader();
+  reader.onload = async function(ev) {
+    try {
+      // Metadatos para que el iPhone 15 no falle
+      var metadata = { contentType: file.type || 'image/jpeg' };
+      var storageRef = firebase.storage().ref().child('productos/' + productRef);
+      
+      await storageRef.put(file, metadata);
+      var url = await storageRef.getDownloadURL();
+      
+      // Burlamos la memoria (caché) del iPhone para que muestre la nueva foto
+      var finalUrl = url + (url.includes('?') ? '&' : '?') + 't=' + Date.now();
+      
+      imgCache[productRef] = finalUrl;
+      saveImgs();
+
+      // Actualizar la foto en pantalla
+      var mshImg = document.getElementById('msh-img');
+      if (mshImg) { 
+          mshImg.src = finalUrl; 
+          mshImg.style.display = 'block'; 
+      }
+      
+      toast('✅ Imagen sincronizada en Sedec', 'ok');
+    } catch(e) {
+      console.error("Error en subida:", e);
+      toast('Error al subir: ' + e.message, 'err');
+    } finally {
+      showLoading(false); // <--- ESTO QUITA LA LÍNEA AZUL SIEMPRE (Pase lo que pase)
+    }
+  };
+  reader.readAsDataURL(file);
 }
 </script>
 </body>
