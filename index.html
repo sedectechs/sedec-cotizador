@@ -613,6 +613,51 @@ body{-webkit-tap-highlight-color:transparent;-webkit-text-size-adjust:100%}
     touch-action: pan-y !important;
   }
 }
+  
+ /* --- MEJORA TÁCTIL SEDEC --- */
+* { -webkit-tap-highlight-color: transparent !important; }
+
+@media (max-width: 768px) {
+  #mResultsList div, .msh-item {
+    padding: 22px 15px !important;
+    min-height: 72px !important;
+    background: #ffffff !important;
+    border-bottom: 1px solid #eee !important;
+    display: flex !important;
+    align-items: center !important;
+    cursor: pointer !important;
+    pointer-events: auto !important;
+    touch-action: manipulation !important;
+    position: relative !important;
+    z-index: 10000 !important;
+  }
+} 
+  /* ... tus otros estilos ... */
+
+  #mResultsList .r-item {
+    padding: 14px !important;
+    min-height: 60px !important;
+    touch-action: manipulation !important;
+    position: relative !important;
+    z-index: 11 !important;
+    border-bottom: 1px solid #eee !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 10px !important;
+    background: #fff !important;
+    cursor: pointer !important;
+    pointer-events: auto !important;
+    -webkit-tap-highlight-color: transparent !important;
+  }
+  
+  #mcp-buscar-wrap,
+  #mcp-buscar-wrap .results,
+  #mcp-buscar-wrap .panel-hdr {
+    pointer-events: auto !important;
+    touch-action: pan-y !important;
+  }
+} /* Asegúrate de que este cierre de llave coincida con tu @media */
+</style>
 </style>
 </head>
 <body style="color-scheme:light !important;background:#fff !important">
@@ -2630,13 +2675,11 @@ function onSearch(q) {
   list.innerHTML='';
   res.forEach(function(item){
     var div=document.createElement('div');
-    div.className='r-item'+(state.selectedProduct&&state.selectedProduct.ref===item.ref?' sel':'');
-    div.onclick=function(){selectProduct(item);}; div.setAttribute('data-ref', item.ref);
-    var img=imgCache[item.ref];
-    div.innerHTML=(img?'<div class="r-thumb"><img src="'+img+'" alt=""></div>':'<div class="r-thumb">📦</div>')+
-      '<div style="flex:1;min-width:0"><div class="r-ref">'+(img?'<span class="dot-img"></span>':'')+item.ref+'</div>'+
-      '<div class="r-desc">'+item.desc+'</div><div class="r-price">COP '+item.precio.toLocaleString('es-CO')+'</div></div>';
-    list.appendChild(div);
+    div.className = 'r-item'; // <--- ESTO ES VITAL: debe decir 'r-item'
+div.setAttribute('role', 'button'); // Para que iPhone sepa que es un botón
+div.onclick = function() {
+  // Aquí va tu lógica para seleccionar el producto
+  selectProduct(p);
   });
 
   if (window.innerWidth <= 640) {
@@ -7177,50 +7220,36 @@ async function _mshSyncImgs() {
   }
 }
 
-
 function _mshHandleImg(event) {
   var file = event.target.files[0];
-  var prod  = _mshProduct || window._mshProduct;
-  if (!file || !prod) { toast('Error: Selecciona producto','err'); return; }
-  _mshProduct = prod; window._mshProduct = prod;
-  state.selectedProduct = prod;
+  var prod = _mshProduct || window._mshProduct;
+  if (!file || !prod) { toast('Error: selecciona un producto primero','err'); return; }
+
   _isUploading = true;
-  showLoading(true);
+  showLoading(true); 
 
   var fileName = 'productos/' + prod.ref.replace(/[^a-zA-Z0-9_-]/g,'_') + '.jpg';
 
-  // Preview inmediato con FileReader
-  var reader = new FileReader();
-  reader.onload = function(ev) {
-    var mshImg = document.getElementById('msh-img');
-    var mshPh  = document.getElementById('msh-imgph');
-    if (mshImg) { mshImg.src = ev.target.result; mshImg.style.display = 'block'; }
-    if (mshPh)  mshPh.style.display = 'none';
-  };
-  reader.readAsDataURL(file);
-
-  // Subida directa sin canvas — evita bloqueos de Canvas API en iOS Safari PWA
   (async function() {
     try {
-      toast('⏳ Subiendo a Firebase...', '');
       await window._fbUpload(fileName, file, file.type || 'image/jpeg');
       var url = window._fbGetURL(fileName);
       imgCache[prod.ref] = url;
       saveImgs();
-      schedulePush();
+      
       var mshImg = document.getElementById('msh-img');
-      if (mshImg) mshImg.src = url + '&t=' + Date.now();
-      toast('✅ Guardado en Firebase', 'ok');
+      if (mshImg) {
+        mshImg.src = url + '&t=' + Date.now();
+        mshImg.style.display = 'block';
+      }
+      toast('✅ Imagen vinculada', 'ok');
     } catch(err) {
-      console.error('Upload error:', err.message);
-      toast('Error al subir: ' + err.message, 'err');
+      console.error('Error Sedec:', err.message);
     } finally {
-      _isUploading = false; // liberar flag para no bloquear otras funciones
-      showLoading(false);
+      _isUploading = false;
+      showLoading(false); // <--- ESTO APAGA LA LÍNEA AZUL SIEMPRE
     }
   })();
-
-  event.target.value = '';
 }
 
 
