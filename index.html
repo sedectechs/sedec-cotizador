@@ -712,6 +712,9 @@ body{-webkit-tap-highlight-color:transparent;-webkit-text-size-adjust:100%}
   .hist-money{width:100%;flex-direction:row;align-items:baseline;justify-content:space-between;text-align:left}
   .hist-card{flex-wrap:nowrap}
 }
+@keyframes bolsaRise{from{transform:translateY(100px)}to{transform:translateY(0)}}
+.bolsa-fill{animation:bolsaRise .9s cubic-bezier(.2,.8,.2,1)}
+@media (prefers-reduced-motion:reduce){.bolsa-fill{animation:none}}
 </style>
 </head>
 <body>
@@ -721,7 +724,7 @@ body{-webkit-tap-highlight-color:transparent;-webkit-text-size-adjust:100%}
   <div class="hdr-logo">
     <img id="headerLogo" alt="Sedec" width="100" height="32" style="opacity:0;transition:opacity .2s">
     <span class="brand">SEDEC <span>TECNOLOGÍAS</span></span>
-    <span style="font-size:9px;opacity:.3;margin-left:8px;font-weight:400">v6.0</span>
+    <span style="font-size:9px;opacity:.3;margin-left:8px;font-weight:400">v6.1</span>
   </div>
   <div class="hdr-tabs-wrap">
   <button type="button" class="hdr-fade l" aria-label="Ver pestañas anteriores" onclick="_hdrTabsNudge(-1)">‹</button>
@@ -735,6 +738,7 @@ body{-webkit-tap-highlight-color:transparent;-webkit-text-size-adjust:100%}
     <button class="tab" onclick="setTab('actividades')">✅ Actividades</button>
     <button class="tab" onclick="setTab('agenda')">📅 Agenda</button>
     <button class="tab" onclick="setTab('recibos')">🧾 Recibos</button>
+    <button class="tab" onclick="setTab('misgastos')">👛 Mis gastos</button>
   </div>
   <button type="button" class="hdr-fade r" aria-label="Ver más pestañas" onclick="_hdrTabsNudge(1)">›</button>
   </div>
@@ -1198,7 +1202,7 @@ function _hdrTabsNudge(dir){
       <button id="finTab-cobrar"  onclick="setFinTab('cobrar')"  style="padding:7px 16px;font-size:12px;font-weight:700;border:none;border-bottom:3px solid transparent;background:none;color:var(--muted);cursor:pointer">📥 Por Cobrar</button>
       <button id="finTab-proyectos" onclick="setFinTab('proyectos')" style="padding:7px 16px;font-size:12px;font-weight:700;border:none;border-bottom:3px solid transparent;background:none;color:var(--muted);cursor:pointer">🏗️ Proyectos</button>
       <button id="finTab-tecnicos" onclick="setFinTab('tecnicos')" style="padding:7px 16px;font-size:12px;font-weight:700;border:none;border-bottom:3px solid transparent;background:none;color:var(--muted);cursor:pointer">👷 Técnicos</button>
-      <button id="finTab-utilidad" onclick="setFinTab('utilidad')" style="padding:7px 16px;font-size:12px;font-weight:700;border:none;border-bottom:3px solid transparent;background:none;color:var(--muted);cursor:pointer">💰 Utilidad</button>
+      <button id="finTab-utilidad" onclick="setFinTab('utilidad')" style="padding:7px 16px;font-size:12px;font-weight:700;border:none;border-bottom:3px solid transparent;background:none;color:var(--muted);cursor:pointer">🎯 Metas</button>
       <button id="finTab-dashboard" onclick="setFinTab('dashboard')" style="padding:7px 16px;font-size:12px;font-weight:700;border:none;border-bottom:3px solid transparent;background:none;color:var(--muted);cursor:pointer">📊 Dashboard</button>
       
     </div>
@@ -1361,6 +1365,13 @@ function _hdrTabsNudge(dir){
 <!-- ══════════════════════════════════════════════════
      TAB: RECIBOS
 ══════════════════════════════════════════════════ -->
+<div class="main" id="tab-misgastos" style="display:none">
+  <div style="flex:1;padding:16px;overflow-y:auto;max-width:1000px;margin:0 auto;width:100%">
+    <h2 style="color:var(--brand-dark);font-size:16px;margin-bottom:12px">👛 Mis gastos</h2>
+    <div id="misGastosContenido"></div>
+  </div>
+</div>
+
 <div class="main" id="tab-recibos" style="display:none">
   <div style="flex:1;padding:16px;overflow-y:auto;max-width:1000px;margin:0 auto;width:100%">
     <h2 style="color:var(--brand-dark);font-size:16px;margin-bottom:12px">🧾 Recibos</h2>
@@ -4824,31 +4835,6 @@ function _loadScriptOnce(src, globalName){
     document.head.appendChild(s);
   });
 }
-// El lienzo de html2canvas se corta en tramos fijos del alto de una hoja,
-// así que CSS page-break no aplica. Aquí se empujan (con padding-top, que no
-// colapsa como el margin) los bloques marcados:
-//   .pdf-new-page → arranca al inicio de la hoja siguiente
-//   .pdf-keep     → si no cabe completo en la hoja actual, pasa a la siguiente
-// Solo afecta elementos con esas clases (hoy: registro fotográfico).
-function _pdfAjustarCortes(d, pageH){
-  var TOP = 40, BOTTOM = 36;
-  var win = d.defaultView;
-  Array.prototype.forEach.call(d.querySelectorAll('.pdf-new-page, .pdf-keep'), function(el){
-    var r = el.getBoundingClientRect();
-    var top = r.top + (win.pageYOffset || 0);
-    var offset = top % pageH;
-    var push = 0;
-    if (el.classList.contains('pdf-new-page')) {
-      if (offset > TOP) push = pageH - offset + TOP;
-    } else if (offset + r.height > pageH - BOTTOM && r.height < pageH - TOP - BOTTOM) {
-      push = pageH - offset + TOP;
-    }
-    if (push > 0) {
-      var pt = parseFloat(win.getComputedStyle(el).paddingTop) || 0;
-      el.style.paddingTop = (pt + push) + 'px';
-    }
-  });
-}
 async function _htmlToPdfBlob(html){
   await _loadScriptOnce('https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js', 'html2canvas');
   if (!window.jspdf || !window.jspdf.jsPDF) throw new Error('jsPDF no disponible');
@@ -4870,7 +4856,6 @@ async function _htmlToPdfBlob(html){
       return img.complete ? null : new Promise(function(r){ img.onload = img.onerror = r; setTimeout(r, 3000); });
     }));
     d.querySelectorAll('.np,.no-print').forEach(function(el){ el.style.display = 'none'; });
-    _pdfAjustarCortes(d, W * 792 / 612); // alto de una hoja carta en px CSS
     var fullH = Math.max(d.body.scrollHeight, d.documentElement.scrollHeight);
     fr.style.height = fullH + 'px';
     // iOS limita un canvas a ~16.7 Mpx: ajustamos la escala para no pasarnos
@@ -6489,7 +6474,7 @@ function renderRecibosTecnicosTab(){
 // TAB SWITCHING
 // ============================================================
 function setTab(tab) {
-  ['cotizar','catalogo','historial','tecnicos','finanzas','proyectos','actividades','agenda','recibos'].forEach(function(t) {
+  ['cotizar','catalogo','historial','tecnicos','finanzas','proyectos','actividades','agenda','recibos','misgastos'].forEach(function(t) {
     var el=document.getElementById('tab-'+t); if(el) el.style.display=t===tab?'flex':'none';
   });
   document.querySelectorAll('.hdr-tabs .tab').forEach(function(b){
@@ -6505,6 +6490,7 @@ function setTab(tab) {
   if(tab==='actividades') {renderActividades();}
   if(tab==='agenda')      {renderAgenda();}
   if(tab==='recibos')     {setRecTab(recTab_active||'clientes');}
+  if(tab==='misgastos')   {renderMisGastos();}
   // ── Mobile nav: actualizar botón activo ──
   document.querySelectorAll('.mobile-nav-btn').forEach(function(btn){
     var t = btn.id ? btn.id.replace('mnav-','') : '';
@@ -7955,15 +7941,15 @@ function _buildBillingHtml(rec, evidenciasHtml){
   '.sig-name{font-size:12px;font-weight:800;color:#0d1f2e}'+
   '.sig-role{font-size:9px;color:#94a3b8;margin-top:2px}'+
   '.bottom-bar{height:4px;background:linear-gradient(90deg,#22d3ee 0%,#1e5799 50%,#0d1f2e 100%);border-radius:3px;margin-top:32px}'+
-  '.evid-section{margin-top:28px;padding-top:6px;page-break-before:always;break-before:page}'+
-  '.evid-title{font-size:15px;font-weight:900;color:#0d1f2e;letter-spacing:-0.3px;text-transform:uppercase;margin-bottom:3px;padding-bottom:8px;border-bottom:2px solid #0d1f2e}'+
-  '.evid-sub{font-size:9.5px;color:#64748b;margin:6px 0 14px}'+
-  '.evid-row{display:flex;gap:14px;margin-bottom:14px;page-break-inside:avoid;break-inside:avoid}'+
-  '.evid-card{width:calc(50% - 7px);flex:0 0 auto;border:1px solid #e2e8f0;border-radius:8px;overflow:hidden;background:#fff}'+
-  '.evid-card .evid-img{height:210px;background:#f1f5f9;display:flex;align-items:center;justify-content:center}'+
-  '.evid-card img{max-width:100%;max-height:210px;object-fit:contain;display:block}'+
-  '.evid-card .evid-desc{padding:7px 10px 8px;font-size:9.5px;color:#1e293b;background:#f8fafc;border-top:1px solid #e2e8f0;line-height:1.45}'+
-  '.evid-card .evid-num{font-size:8px;font-weight:800;color:#0369a1;text-transform:uppercase;letter-spacing:1px;margin-bottom:2px}'+
+  '.sello{position:absolute;left:24px;top:14px;transform:rotate(-13deg);border:4px double #16a34a;color:#16a34a;border-radius:12px;padding:10px 20px;font-size:30px;font-weight:900;letter-spacing:4px;text-align:center;line-height:1;opacity:.85}'+
+  '.sello small{display:block;font-size:9px;letter-spacing:1.5px;margin-top:6px;font-weight:700}'+
+  '.evid-section{margin-top:36px;padding-top:24px;border-top:2px solid #0d1f2e}'+
+  '.evid-title{font-size:16px;font-weight:900;color:#0d1f2e;letter-spacing:-0.3px;text-transform:uppercase;margin-bottom:4px}'+
+  '.evid-sub{font-size:10px;color:#64748b;margin-bottom:18px}'+
+  '.evid-card{page-break-inside:avoid;margin-bottom:20px;border:1px solid #e2e8f0;border-radius:10px;overflow:hidden}'+
+  '.evid-card img{width:100%;max-height:360px;object-fit:contain;background:#f1f5f9;display:block}'+
+  '.evid-card .evid-desc{padding:10px 14px;font-size:11px;color:#1e293b;background:#f8fafc;border-top:1px solid #e2e8f0;line-height:1.6}'+
+  '.evid-card .evid-num{font-size:9px;font-weight:800;color:#0369a1;text-transform:uppercase;letter-spacing:1px;margin-bottom:3px}'+
   '</style></head><body><div class="page">'+
   '<div class="accent-bar"></div>'+
   '<div class="header">'+
@@ -7999,17 +7985,25 @@ function _buildBillingHtml(rec, evidenciasHtml){
     '</tr></thead>'+
     '<tbody>'+rowsHtml+'</tbody>'+
   '</table>'+
+  '<div style="position:relative">'+
+  (rec._sello==='cancelado'?'<div class="sello">CANCELADO<small>'+String(rec.dateStr||'').toUpperCase()+'</small></div>':'')+
   '<div class="totals">'+
     '<div class="t-row"><span>Subtotal productos</span><span>$ '+Math.round(rec.subtotal).toLocaleString('es-CO')+'</span></div>'+
     (rec.totalFletes>0?'<div class="t-row"><span>Flete / Servicios</span><span>$ '+Math.round(rec.totalFletes).toLocaleString('es-CO')+'</span></div>':'')+
     abonosHtml+
-    (_ab.length
+    (rec._sello==='cancelado'
+      ? '<div class="t-total" style="background:#16a34a"><span>TOTAL PAGADO</span><span>$ '+totalFmt+'</span></div>'+
+        '<div class="t-row" style="font-weight:700;color:#16a34a;border:none;padding-top:8px"><span>Saldo pendiente</span><span>$ 0</span></div>'
+      : _ab.length
       ? '<div class="t-total"><span>'+(rec.billingType==='recibo'?'SALDO PENDIENTE':'SALDO A PAGAR')+'</span><span>'+_money(_saldo)+'</span></div>'
       : '<div class="t-total"><span>TOTAL</span><span>$ '+totalFmt+'</span></div>')+
-  '</div>'+
+  '</div></div>'+
   (rec.valLetras?'<div class="letras">Son: '+rec.valLetras+' M/CTE</div>':'')+
-  '<div class="section-title">Información de Pago</div>'+
-  '<div class="payment-box">'+(_pagoTxt||'').replace(/</g,'&lt;')+'</div>'+
+  (rec._sello==='cancelado'
+    ? '<div class="section-title">Constancia de Pago</div>'+
+      '<div class="payment-box" style="background:#f0fdf4;border-color:#86efac;color:#166534">Se deja constancia de que el valor total de este documento fue recibido a satisfacción el '+(rec.dateStr||'')+'.'+(rec._refDoc?'\nCorresponde a la '+(rec._refTipo==='factura'?'Factura':'Cuenta de Cobro')+' No. '+String(rec._refDoc).replace(/</g,'&lt;')+'.':'')+'\nEl cliente queda a paz y salvo por este concepto.</div>'
+    : '<div class="section-title">Información de Pago</div>'+
+      '<div class="payment-box">'+(_pagoTxt||'').replace(/</g,'&lt;')+'</div>')+
   '<div class="footer">'+
     '<div class="sig-block">'+
       '<div class="sig-line">'+
@@ -8038,21 +8032,17 @@ async function _ccBuildEvidenciasHtml(rec, evidenciasPreloaded){
     try { evidencias = await _evidObtener(rec.id); } catch(e){ evidencias = []; }
   }
   if(evidencias && evidencias.length){
-    // Grilla de 2 columnas: cada fila (.evid-row) es un bloque indivisible
-    // para que ninguna foto quede partida entre dos páginas del PDF.
     var cardsHtml = '';
     for(var i=0; i<evidencias.length; i++){
       var item = evidencias[i];
       var dataUrl = null;
       if(item.blob){ try { dataUrl = await _blobToDataURL(item.blob); } catch(e){ dataUrl = null; } }
-      if(i % 2 === 0) cardsHtml += '<div class="evid-row pdf-keep">';
       cardsHtml += '<div class="evid-card">'+
-        '<div class="evid-img">'+(dataUrl ? '<img src="'+dataUrl+'" alt="Evidencia '+(i+1)+'">' : '<span style="color:#94a3b8;font-size:10px;font-style:italic">Imagen no disponible</span>')+'</div>'+
+        (dataUrl ? '<img src="'+dataUrl+'" alt="Evidencia '+(i+1)+'">' : '<div style="height:180px;background:#f1f5f9;display:flex;align-items:center;justify-content:center;color:#94a3b8;font-size:11px;font-style:italic">Imagen no disponible</div>')+
         '<div class="evid-desc"><div class="evid-num">Evidencia '+(i+1)+'</div>'+((item.descripcion||'(sin descripción)').replace(/</g,'&lt;'))+'</div>'+
       '</div>';
-      if(i % 2 === 1 || i === evidencias.length-1) cardsHtml += '</div>';
     }
-    return '<div class="evid-section pdf-new-page"><div class="evid-title">📸 Registro Fotográfico</div>'+
+    return '<div class="evid-section"><div class="evid-title">📸 Registro Fotográfico</div>'+
       '<div class="evid-sub">Soporte visual de las actividades realizadas — '+evidencias.length+' evidencia(s)</div>'+
       cardsHtml+'</div>';
   }
@@ -8165,6 +8155,7 @@ function _ccRowHtml(r, idx, archivada){
     '<div style="display:flex;align-items:center;gap:10px">'+
       '<span style="font-weight:800;color:var(--brand-dark)">'+fmt(r.saldo!==undefined?r.saldo:r.total)+(r.totalAbonos>0?'<div style="font-size:9px;font-weight:600;color:#16a34a;text-align:right">abonado '+fmt(r.totalAbonos)+'</div>':'')+'</span>'+
       '<button onclick="_ccVerDocumento('+idx+')" style="background:#f0f4f8;color:var(--brand-dark);border:1px solid var(--border);border-radius:6px;padding:5px 10px;font-size:11px;cursor:pointer">👁️ Ver</button>'+
+      (r.billingType==='recibo'?'':'<button onclick="_ccGenerarReciboPago('+idx+')" title="Generar recibo de pago con sello CANCELADO" style="background:#16a34a;color:#fff;border:1px solid #16a34a;border-radius:6px;padding:5px 10px;font-size:11px;font-weight:700;cursor:pointer">✅ Recibo de pago</button>')+
       (archivada?'':'<button onclick="_ccEditarEvidencias('+idx+')" style="background:#fff7ed;color:#c2410c;border:1px solid #fed7aa;border-radius:6px;padding:5px 10px;font-size:11px;cursor:pointer">📸 '+((r.evidencias&&r.evidencias.length)?r.evidencias.length+' evid.':'Evidencias')+'</button>')+
       accionesBtn+
       '<button onclick="_ccEliminarDocumento('+idx+')" title="Eliminar" style="background:#fef2f2;color:#dc2626;border:1px solid #fecaca;border-radius:6px;padding:5px 9px;font-size:11px;cursor:pointer">🗑️</button>'+
@@ -8539,6 +8530,11 @@ function buildSyncPackage() {
     clientesDB:    clientes_db     || [],
     recibosClientes: recibos_clientes || [],
     cuentasCobro:  cuentas_cobro   || [],
+    misGastos:     mis_gastos      || [],
+    misGastosDel:  _deletedMGIds   || [],
+    misGastosCats: mis_gastos_cats || [],
+    misGastosCatsTs: localStorage.getItem('sedec_mg_cats_ts') || '0',
+    metas:         metas_data      || {},
 
     catalogOverrides: CATALOG_OVERRIDES || {},
     hiddenProducts:   HIDDEN_PRODUCTS   || [],
@@ -8682,6 +8678,9 @@ function applySyncPackage(pkg) {
     changed.push(cuentas_cobro.length+' cuentas de cobro');
     if(typeof renderCuentasCobroTab==='function' && recTab_active==='cobros') renderCuentasCobroTab();
   }
+
+  // Mis gastos, categorías y metas (módulo v6.1)
+  try{ _fxApplySync(pkg, changed); }catch(e){ console.warn('sync mis gastos/metas', e); }
 
   // Técnicos nombres
   if(Array.isArray(pkg.tecnicosNames) && pkg.tecnicosNames.length > 0){
@@ -9049,6 +9048,7 @@ function setFinTab(tab) {
   if(tab==='proyectos'){renderProyectosFin();return;}
   if(tab==='tecnicos'){renderTecnicosFin();return;}
   if(tab==='dashboard'){renderDashboardFin();return;}
+  if(tab==='utilidad'){renderFinanzas();return;}
   if(addBtns)addBtns.style.display=(tab==='resumen')?'none':'flex';
   if(ordenBar)ordenBar.style.display=(tab==='resumen')?'none':'flex';
   if(tab!=='resumen') setFinOrden(finOrden);
@@ -9235,114 +9235,8 @@ function renderFinanzas() {
   var panel=document.getElementById('finanzasContenido');
   if(!panel) return;
 
-  // ── TAB UTILIDAD ──────────────────────────────────────────
-  if(finTab_active==='utilidad'){
-    // Cargar meta mensual desde localStorage
-    var metaKey='sedec_meta_utilidad_v1';
-    var metaData=(function(){try{return JSON.parse(localStorage.getItem(metaKey)||'{}');}catch(e){return{};}})();
-
-    // Mes actual: formato YYYY-MM
-    var ahora=new Date();
-    var mesActual=ahora.getFullYear()+'-'+(String(ahora.getMonth()+1).padStart(2,'0'));
-    var mesesDisp=[];
-    for(var m=5;m>=0;m--){
-      var d=new Date(ahora.getFullYear(),ahora.getMonth()-m,1);
-      mesesDisp.push(d.getFullYear()+'-'+(String(d.getMonth()+1).padStart(2,'0')));
-    }
-    if(!window._utilMesVer) window._utilMesVer=mesActual;
-    var mesVer=window._utilMesVer;
-
-    // Calcular utilidad de cada proyecto CERRADO (finalizado)
-    // Solo entra a Utilidad cuando el proyecto tiene p.cerrado === true
-    // El mes se determina por fechaCierre del proyecto (no la fecha de la cotización)
-    function utilidadDelMes(mes) {
-      return proyectos_fin.filter(function(p){
-        if(!p.cerrado) return false;
-        // fechaCierre formato d/m/yyyy o similar
-        var f = p.fechaCierre || '';
-        var parts = f.split('/');
-        if(parts.length < 3) return false;
-        var yyyy = parts[2]; var mm = String(parts[1]).padStart(2,'0');
-        return (yyyy + '-' + mm) === mes;
-      }).map(function(p){
-        var totG = (p.gastos||[]).reduce(function(s,g){var v=parseFloat(g.valor)||0;return s+(v>0?v:0);},0);
-        var utilidad = (p.totalCot||0) - totG;
-        return {nombre:p.nombre,cliente:p.cliente,cotId:p.cotId,total:p.totalCot||0,utilidad:utilidad,conGastos:(p.gastos||[]).length>0};
-      });
-    }
-
-    var itemsMes=utilidadDelMes(mesVer);
-    var totalUtilMes=itemsMes.reduce(function(s,x){return s+x.utilidad;},0);
-    var metaMes=parseFloat(metaData[mesVer])||0;
-    var pct=metaMes>0?Math.min(100,Math.round(totalUtilMes/metaMes*100)):0;
-    var barColor=pct>=100?'#16a34a':pct>=60?'#f59e0b':'#dc2626';
-
-    // Labels de mes
-    var mesesLabels={};
-    mesesDisp.forEach(function(ms){
-      var p=ms.split('-');
-      var nombres=['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
-      mesesLabels[ms]=nombres[parseInt(p[1])-1]+' '+p[0];
-    });
-
-    var selectorMeses=mesesDisp.map(function(ms){
-      return '<button onclick="window._utilMesVer=\''+ms+'\';renderFinanzas()" style="padding:5px 12px;border-radius:6px;border:1.5px solid '+(ms===mesVer?'var(--brand)':'var(--border)')+';background:'+(ms===mesVer?'var(--brand)':'#fff')+';color:'+(ms===mesVer?'#fff':'var(--muted)')+';font-size:11px;font-weight:700;cursor:pointer">'+mesesLabels[ms]+'</button>';
-    }).join('');
-
-    var itemsHtml=itemsMes.length===0
-      ? '<div style="text-align:center;padding:24px;color:var(--muted);font-size:12px">Sin proyectos finalizados en '+mesesLabels[mesVer]+'</div>'
-      : itemsMes.map(function(x){
-          return '<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid #f0f4f8;gap:8px">'+
-            '<div style="flex:1">'+
-              '<div style="font-size:12px;font-weight:700;color:var(--brand-dark)">'+x.nombre+'</div>'+
-              '<div style="font-size:10px;color:var(--muted)">'+x.cliente+' · '+x.cotId+(x.conGastos?' · con gastos reales':' · sin gastos registrados')+'</div>'+
-            '</div>'+
-            '<div style="font-size:14px;font-weight:800;color:'+(x.utilidad>=0?'#16a34a':'#dc2626')+'">'+fmt(x.utilidad)+'</div>'+
-          '</div>';
-        }).join('');
-
-    panel.innerHTML=
-      '<div style="padding:4px 0 12px;display:flex;gap:6px;flex-wrap:wrap">'+selectorMeses+'</div>'+
-      '<div style="background:#fff;border-radius:12px;border:1px solid var(--border);padding:16px;margin-bottom:14px">'+
-        '<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px;flex-wrap:wrap;gap:8px">'+
-          '<div>'+
-            '<div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px">Utilidad — '+mesesLabels[mesVer]+'</div>'+
-            '<div style="font-size:28px;font-weight:800;color:'+(totalUtilMes>=0?'#16a34a':'#dc2626')+'">'+fmt(totalUtilMes)+'</div>'+
-          '</div>'+
-          '<div style="text-align:right">'+
-            '<div style="font-size:11px;color:var(--muted);margin-bottom:4px">Meta del mes</div>'+
-            '<div style="display:flex;align-items:center;gap:6px">'+
-              '<input id="metaInput" type="number" min="0" step="100000" value="'+(metaMes||'')+'" placeholder="0" '+
-                'style="width:140px;border:1.5px solid var(--border);border-radius:6px;padding:5px 8px;font-size:14px;font-weight:700;text-align:right;outline:none" '+
-                'oninput="'+
-                  'var d=(function(){try{return JSON.parse(localStorage.getItem(\''+metaKey+'\')||\'{}\')}catch(e){return{}}})();'+
-                  'd[\''+mesVer+'\']=parseFloat(this.value)||0;'+
-                  'localStorage.setItem(\''+metaKey+'\',JSON.stringify(d));'+
-                  'renderFinanzas()'+
-                '">'+
-              '<span style="font-size:12px;color:var(--muted)">COP</span>'+
-            '</div>'+
-          '</div>'+
-        '</div>'+
-        (metaMes>0?
-          '<div style="margin-bottom:6px">'+
-            '<div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:4px">'+
-              '<span style="color:var(--muted)">Progreso</span>'+
-              '<span style="font-weight:700;color:'+barColor+'">'+pct+'%</span>'+
-            '</div>'+
-            '<div style="background:#e5e7eb;border-radius:6px;height:10px">'+
-              '<div style="background:'+barColor+';height:10px;width:'+pct+'%;border-radius:6px;transition:width .4s"></div>'+
-            '</div>'+
-            '<div style="font-size:10px;color:var(--muted);margin-top:4px">Falta: '+fmt(Math.max(0,metaMes-totalUtilMes))+'</div>'+
-          '</div>'
-        :'')+
-      '</div>'+
-      '<div style="background:#fff;border-radius:12px;border:1px solid var(--border);padding:14px">'+
-        '<div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px">Desglose por instalación</div>'+
-        itemsHtml+
-      '</div>';
-    return;
-  }
+  // ── TAB METAS (bolsitas) — reemplaza la antigua pestaña Utilidad ──
+  if(finTab_active==='utilidad'){ renderMetasPanel(); return; }
   // ─────────────────────────────────────────────────────────
 
   if(finTab_active==='resumen'){
@@ -9894,6 +9788,728 @@ var proyectos_fin=(function(){try{return JSON.parse(localStorage.getItem('sedec_
 var TECNICOS_NAMES=(function(){try{return JSON.parse(localStorage.getItem('sedec_tecnicos_v1')||'[]');}catch(e){return[];}})(  );
 function saveTecnicosNames(){try{localStorage.setItem('sedec_tecnicos_v1',JSON.stringify(TECNICOS_NAMES));}catch(e){} schedulePush();}
 
+// ══════════════════════════════════════════════════════════════════════
+// MÓDULO v6.1 — METAS (bolsitas) · MIS GASTOS · RECIBO DE PAGO (cuentas de cobro)
+// ══════════════════════════════════════════════════════════════════════
+var FX_MESES_L = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
+var FX_MESES_C = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+function _fxLoad(k,def){ try{ var v=JSON.parse(localStorage.getItem(k)||'null'); return v==null?def:v; }catch(e){ return def; } }
+function _fxEsc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }
+// Acepta 'YYYY-MM-DD', 'd/m/yyyy' y 'd de mes de yyyy' (los 3 formatos que ya usa la app)
+function _fxParseFecha(s){
+  if(!s) return null; s=String(s).trim();
+  var m=s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/); if(m) return new Date(+m[1],+m[2]-1,+m[3],12);
+  m=s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/);   if(m) return new Date(+m[3],+m[2]-1,+m[1],12);
+  m=s.toLowerCase().match(/(\d{1,2})\s+de\s+([a-záéíóú]+)\s+de\s+(\d{4})/);
+  if(m){ var i=FX_MESES_L.indexOf(m[2]); if(i>=0) return new Date(+m[3],i,+m[1],12); }
+  return null;
+}
+function _fxISO(d){ return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+function _fxMesDe(s){ var d=_fxParseFecha(s); return d ? _fxISO(d).slice(0,7) : ''; }
+function _fxMesActual(){ return _fxISO(new Date()).slice(0,7); }
+function _fxMesShift(mes,delta){ var p=mes.split('-'); var d=new Date(+p[0],+p[1]-1+delta,1,12); return _fxISO(d).slice(0,7); }
+function _fxMesLabel(mes,largo){ var p=mes.split('-'); var i=+p[1]-1; return largo ? (FX_MESES_L[i].charAt(0).toUpperCase()+FX_MESES_L[i].slice(1)+' '+p[0]) : (FX_MESES_C[i]+' '+p[0].slice(2)); }
+function _fxFmtK(v){ var a=Math.abs(v); if(a>=1e6) return (v/1e6).toFixed(a>=1e7?0:1).replace('.',',')+'M'; if(a>=1e3) return Math.round(v/1e3)+'k'; return String(Math.round(v)); }
+function _fxNavMes(mes, fnName){
+  var esActual = mes===_fxMesActual();
+  var b='background:#fff;border:1.5px solid var(--border);border-radius:8px;width:34px;height:34px;font-size:16px;font-weight:800;color:var(--brand-dark);cursor:pointer';
+  return '<div style="display:flex;align-items:center;gap:8px">'+
+    '<button aria-label="Mes anterior" onclick="'+fnName+'(\''+_fxMesShift(mes,-1)+'\')" style="'+b+'">‹</button>'+
+    '<div style="min-width:130px;text-align:center;font-size:14px;font-weight:800;color:var(--brand-dark)">'+_fxMesLabel(mes,true)+'</div>'+
+    '<button aria-label="Mes siguiente" onclick="'+fnName+'(\''+_fxMesShift(mes,1)+'\')" style="'+b+'">›</button>'+
+    (esActual?'':'<button onclick="'+fnName+'(\''+_fxMesActual()+'\')" style="background:var(--brand);color:#fff;border:none;border-radius:8px;padding:8px 12px;font-size:11px;font-weight:700;cursor:pointer">Hoy</button>')+
+  '</div>';
+}
+
+// ───────────────────────── METAS ─────────────────────────
+// metas_data = { utilidad:{'YYYY-MM':valor}, tecnicos:{nombre:{'YYYY-MM':valor}}, visitas:true, upd:ts }
+// Una meta se hereda a los meses siguientes hasta que se cambie.
+var metas_data = _fxLoad('sedec_metas_v1', null);
+if(!metas_data){
+  metas_data = {utilidad:{}, tecnicos:{}, visitas:true, upd:0};
+  var _oldMeta = _fxLoad('sedec_meta_utilidad_v1', {});   // migración de la meta vieja (solo local)
+  Object.keys(_oldMeta||{}).forEach(function(k){ if(parseFloat(_oldMeta[k])>0) metas_data.utilidad[k]=parseFloat(_oldMeta[k]); });
+}
+function saveMetas(){
+  metas_data.upd = Date.now();
+  try{ localStorage.setItem('sedec_metas_v1', JSON.stringify(metas_data)); }catch(e){}
+  if(typeof schedulePush==='function') schedulePush();
+}
+function _metaGet(map, mes){
+  if(!map) return 0;
+  if(map[mes]!=null) return parseFloat(map[mes])||0;
+  var ks=Object.keys(map).filter(function(k){ return k<mes; }).sort();
+  return ks.length ? (parseFloat(map[ks[ks.length-1]])||0) : 0;
+}
+function _metaSetUtilidad(mes, val){ metas_data.utilidad[mes]=Math.max(0,parseFloat(val)||0); saveMetas(); renderMetasPanel(); }
+function _metaSetTecnico(nombre, mes, val){
+  if(!metas_data.tecnicos) metas_data.tecnicos={};
+  if(!metas_data.tecnicos[nombre]) metas_data.tecnicos[nombre]={};
+  metas_data.tecnicos[nombre][mes]=Math.max(0,parseFloat(val)||0); saveMetas(); renderMetasPanel();
+}
+function _metaToggleVisitas(on){ metas_data.visitas=!!on; saveMetas(); renderMetasPanel(); }
+function _metasSetMes(m){ window._metasMes=m; renderMetasPanel(); }
+
+function _pfSum(arr, filtro){ return (arr||[]).reduce(function(s,g){ if(filtro && !filtro(g)) return s; var v=parseFloat(g.valor)||0; return s+(v>0?v:0); },0); }
+// Ganancia estimada = valor de la cotización − costo de equipos − mano de obra − fletes cotizados.
+function _pfGananciaEst(p){
+  if(p && typeof p.gananciaEst==='number') return p.gananciaEst;
+  var q=(history_list||[]).find(function(h){ return h.id===p.cotId; });
+  if(q && Array.isArray(q.categories)){
+    var costo=0;
+    q.categories.forEach(function(cat){
+      (cat.items||[]).forEach(function(it){ costo += (parseFloat(it.precio)||0)*(parseFloat(it.qty)||1) + (parseFloat(it.moValue)||0); });
+      (cat.fletes||[]).forEach(function(f){ costo += (parseFloat(f.valor)||0); });
+    });
+    return (q.total||p.totalCot||0) - costo;
+  }
+  if(q && typeof q.ganancia==='number') return q.ganancia;
+  return null;
+}
+function _pfGananciaReal(p){ return (p.totalCot||0) - _pfSum(p.gastos); }
+
+function _metasDatos(mes){
+  var esActual = mes===_fxMesActual();
+  var cerrados = proyectos_fin.filter(function(p){ return p.cerrado && _fxMesDe(p.fechaCierre)===mes; }).map(function(p){
+    var totA=_pfSum(p.abonos);
+    return {p:p, est:_pfGananciaEst(p), real:_pfGananciaReal(p), porCobrar:Math.max(0,(p.totalCot||0)-totA)};
+  });
+  var activos = proyectos_fin.filter(function(p){ return !p.cerrado; }).map(function(p){
+    var est=_pfGananciaEst(p), totG=_pfSum(p.gastos), tot=(p.totalCot||0);
+    // Proyección conservadora: si ya gastaste más de lo cotizado, manda lo real
+    var proy = est!=null ? tot-Math.max(totG, tot-est) : tot-totG;
+    var gastMO=_pfSum(p.gastos,function(g){return g.cat==='mo';});
+    return {p:p, est:est, hoy:tot-totG, proy:proy, moDisp:Math.max(0,(p.presupMO||0)-gastMO)};
+  });
+  var visitas = (recibos_clientes||[]).filter(function(r){ return r.estado==='cancelado' && _fxMesDe(r.fecha)===mes; });
+  var utilProy = cerrados.reduce(function(s,x){return s+x.real;},0);
+  var utilVis  = metas_data.visitas!==false ? visitas.reduce(function(s,r){return s+(parseFloat(r.total)||0);},0) : 0;
+  var proyec   = esActual ? activos.reduce(function(s,x){return s+x.proy;},0) : 0;
+  // Técnicos
+  var porTec=_agregarPagosPorTecnico();
+  var nombres=TECNICOS_NAMES.slice();
+  Object.keys(porTec).forEach(function(n){ if(nombres.indexOf(n)<0) nombres.push(n); });
+  var tecs=nombres.map(function(n){
+    var t=porTec[n]||{pagos:[]};
+    var pagMes=0, pend=0;
+    t.pagos.forEach(function(x){
+      if(x.pagado){ if(_fxMesDe(x.fecha)===mes) pagMes+=(parseFloat(x.valor)||0); }
+      else pend+=(parseFloat(x.valor)||0);
+    });
+    return {nombre:n, meta:_metaGet((metas_data.tecnicos||{})[n],mes), pagado:pagMes, pendiente:pend};
+  });
+  return {mes:mes, esActual:esActual, cerrados:cerrados, activos:activos, visitas:visitas,
+    utilProy:utilProy, utilVis:utilVis, utilidad:utilProy+utilVis, proyeccion:proyec,
+    meta:_metaGet(metas_data.utilidad,mes), tecs:tecs,
+    moDisp: activos.reduce(function(s,x){return s+x.moDisp;},0)};
+}
+
+// Bolsita SVG: se llena de abajo hacia arriba según pct; línea punteada = proyección
+function _bolsaSVG(pct, color, proyPct, w){
+  w=w||124;
+  var p=Math.max(0,Math.min(100,pct||0));
+  var top=38, bot=132, h=bot-top;
+  var y=bot-h*p/100;
+  var uid='b'+Math.random().toString(36).slice(2,8);
+  var body='M46 38 C12 62 6 132 62 132 C118 132 112 62 78 38 Z';
+  var linea='';
+  if(proyPct!=null && proyPct>p){
+    var yp=bot-h*Math.min(100,proyPct)/100;
+    linea='<line x1="14" x2="110" y1="'+yp+'" y2="'+yp+'" stroke="'+color+'" stroke-width="1.5" stroke-dasharray="4 3" opacity=".8" clip-path="url(#'+uid+')"/>';
+  }
+  return '<svg viewBox="0 0 124 140" width="'+w+'" height="'+Math.round(w*140/124)+'" role="img" aria-label="Meta al '+Math.round(pct||0)+' por ciento" style="flex-shrink:0">'+
+    '<defs><clipPath id="'+uid+'"><path d="'+body+'"/></clipPath></defs>'+
+    '<path d="'+body+'" fill="#f1f5f9"/>'+
+    '<g clip-path="url(#'+uid+')"><rect class="bolsa-fill" x="0" y="'+y+'" width="124" height="'+(bot-y+2)+'" fill="'+color+'" opacity=".88"/>'+
+      (p>0&&p<100?'<path d="M0 '+y+' q15 -5 31 0 t31 0 t31 0 t31 0 v6 h-124 z" fill="'+color+'" class="bolsa-fill"/>':'')+'</g>'+
+    linea+
+    '<path d="'+body+'" fill="none" stroke="'+color+'" stroke-width="3" stroke-linejoin="round"/>'+
+    '<path d="M44 34 Q62 42 80 34 L88 12 Q76 20 62 14 Q48 20 36 12 Z" fill="'+color+'"/>'+
+    '<rect x="42" y="31" width="40" height="8" rx="4" fill="#0d1f2e"/>'+
+    '<text x="62" y="96" text-anchor="middle" font-size="24" font-weight="800" fill="#0d1f2e" stroke="#fff" stroke-width="4" stroke-linejoin="round" style="paint-order:stroke">'+Math.round(pct||0)+'%</text>'+
+  '</svg>';
+}
+
+function renderMetasPanel(){
+  var panel=document.getElementById('finanzasContenido'); if(!panel) return;
+  var mes=window._metasMes||_fxMesActual();
+  var D=_metasDatos(mes);
+  var pct = D.meta>0 ? D.utilidad/D.meta*100 : 0;
+  var pctProy = D.meta>0 ? (D.utilidad+D.proyeccion)/D.meta*100 : 0;
+  var col = pct>=100?'#16a34a':pct>=60?'#d97706':'#0369a1';
+  var falta = Math.max(0, D.meta-D.utilidad);
+  var faltaConProy = Math.max(0, D.meta-D.utilidad-D.proyeccion);
+  var inp='border:1.5px solid var(--border);border-radius:6px;padding:6px 8px;font-size:13px;font-weight:700;text-align:right;outline:none;width:130px';
+  var card='background:#fff;border-radius:12px;border:1px solid var(--border);padding:16px;margin-bottom:14px';
+  var h4='font-size:11px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px';
+
+  // Promedio de ganancia real por proyecto (últimos 3 meses) → cuántos proyectos faltan
+  var ult=[], m0=mes;
+  for(var k=0;k<3;k++){ proyectos_fin.forEach(function(p){ if(p.cerrado && _fxMesDe(p.fechaCierre)===m0) ult.push(_pfGananciaReal(p)); }); m0=_fxMesShift(m0,-1); }
+  var prom = ult.length ? ult.reduce(function(s,v){return s+v;},0)/ult.length : 0;
+
+  var msg;
+  if(!D.meta) msg='<span style="color:var(--muted)">Ponle una meta al mes para que la bolsita se empiece a llenar.</span>';
+  else if(pct>=100) msg='<b style="color:#16a34a">Meta cumplida.</b> Te pasaste por '+fmt(D.utilidad-D.meta)+'.';
+  else if(D.esActual && faltaConProy<=0) msg='Con lo finalizado te faltan <b>'+fmt(falta)+'</b>, pero <b style="color:#16a34a">los proyectos en curso alcanzan para cubrirla</b> si los cierras este mes.';
+  else if(D.esActual) msg='Aun cerrando todo lo que está en curso te faltan <b style="color:#dc2626">'+fmt(faltaConProy)+'</b>'+(prom>0?' — unos <b>'+Math.ceil(faltaConProy/prom)+' proyecto(s)</b> más al promedio de '+fmt(prom)+' de ganancia por proyecto.':'. Toca conseguir más visitas o proyectos.');
+  else msg='Faltaron <b style="color:#dc2626">'+fmt(falta)+'</b> para la meta.';
+
+  var html='<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:14px">'+
+    _fxNavMes(mes,'_metasSetMes')+
+    '<label style="display:flex;align-items:center;gap:6px;font-size:11px;color:var(--muted);font-weight:600;cursor:pointer"><input type="checkbox" '+(metas_data.visitas!==false?'checked':'')+' onchange="_metaToggleVisitas(this.checked)" style="width:15px;height:15px"> Sumar visitas técnicas cobradas</label>'+
+  '</div>';
+
+  // ── Mi bolsita ──
+  html+='<div style="'+card+'">'+
+    '<div style="'+h4+'">Mi bolsita — utilidad de Sedec</div>'+
+    '<div style="display:flex;gap:18px;align-items:center;flex-wrap:wrap">'+
+      _bolsaSVG(pct,col,D.esActual?pctProy:null)+
+      '<div style="flex:1;min-width:220px">'+
+        '<div style="font-size:11px;color:var(--muted)">Ganancia real del mes</div>'+
+        '<div style="font-size:28px;font-weight:800;line-height:1.1;color:'+(D.utilidad>=0?'#16a34a':'#dc2626')+'">'+fmt(D.utilidad)+'</div>'+
+        '<div style="display:flex;align-items:center;gap:8px;margin:8px 0;flex-wrap:wrap">'+
+          '<span style="font-size:11px;color:var(--muted)">Meta</span>'+
+          '<input type="number" min="0" step="100000" inputmode="numeric" aria-label="Meta de utilidad del mes" value="'+(D.meta||'')+'" placeholder="0" style="'+inp+'" onchange="_metaSetUtilidad(\''+mes+'\',this.value)">'+
+          '<span style="font-size:10px;color:var(--muted)">se mantiene los meses siguientes hasta que la cambies</span>'+
+        '</div>'+
+        '<div style="font-size:12px;line-height:1.5;color:var(--text)">'+msg+'</div>'+
+        '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px;margin-top:12px">'+
+          '<div style="background:#f0fdf4;border-radius:8px;padding:8px 10px"><div style="font-size:9px;font-weight:700;color:#16a34a">PROYECTOS FINALIZADOS ('+D.cerrados.length+')</div><div style="font-size:14px;font-weight:800;color:#16a34a">'+fmt(D.utilProy)+'</div></div>'+
+          (metas_data.visitas!==false?'<div style="background:#eff6ff;border-radius:8px;padding:8px 10px"><div style="font-size:9px;font-weight:700;color:#1d4ed8">VISITAS COBRADAS ('+D.visitas.length+')</div><div style="font-size:14px;font-weight:800;color:#1d4ed8">'+fmt(D.utilVis)+'</div></div>':'')+
+          (D.esActual?'<div style="background:#fffbeb;border-radius:8px;padding:8px 10px;border:1.5px dashed #fcd34d"><div style="font-size:9px;font-weight:700;color:#b45309">EN CURSO, POR ENTRAR ('+D.activos.length+')</div><div style="font-size:14px;font-weight:800;color:#b45309">'+fmt(D.proyeccion)+'</div></div>':'')+
+        '</div>'+
+      '</div>'+
+    '</div>'+
+  '</div>';
+
+  // ── Estimada vs real ──
+  function filaProy(x, real, lblReal){
+    var dif = x.est!=null ? real-x.est : null;
+    return '<tr style="border-bottom:1px solid #f0f4f8">'+
+      '<td style="padding:8px 6px"><div style="font-weight:700;color:var(--brand-dark)">'+_fxEsc(x.p.nombre)+'</div><div style="font-size:10px;color:var(--muted)">'+_fxEsc(x.p.cliente)+(x.porCobrar>0?' · <span style="color:#d97706;font-weight:700">por cobrar '+fmt(x.porCobrar)+'</span>':'')+'</div></td>'+
+      '<td style="padding:8px 6px;text-align:right;white-space:nowrap;color:var(--muted)">'+(x.est!=null?fmt(x.est):'—')+'</td>'+
+      '<td style="padding:8px 6px;text-align:right;white-space:nowrap;font-weight:800;color:'+(real>=0?'#16a34a':'#dc2626')+'">'+fmt(real)+'</td>'+
+      '<td style="padding:8px 6px;text-align:right;white-space:nowrap;font-weight:700;color:'+(dif==null?'var(--muted)':dif>=0?'#16a34a':'#dc2626')+'">'+(dif==null?'—':(dif>=0?'▲ ':'▼ ')+fmt(Math.abs(dif)))+'</td></tr>';
+  }
+  function tabla(titulo, filas, lblReal, vacio){
+    return '<div style="'+card+'"><div style="'+h4+'">'+titulo+'</div>'+
+      (filas ? '<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:12px"><thead><tr style="font-size:10px;color:var(--muted);text-align:right">'+
+        '<th style="text-align:left;padding:4px 6px;font-weight:700">Proyecto</th><th style="padding:4px 6px;font-weight:700">Estimada</th><th style="padding:4px 6px;font-weight:700">'+lblReal+'</th><th style="padding:4px 6px;font-weight:700">Diferencia</th></tr></thead><tbody>'+filas+'</tbody></table></div>'
+      : '<div style="font-size:12px;color:var(--muted);padding:6px 0">'+vacio+'</div>')+'</div>';
+  }
+  html+=tabla('Finalizados en '+_fxMesLabel(mes,true)+' — ganancia estimada vs real',
+    D.cerrados.map(function(x){ return filaProy(x,x.real); }).join(''), 'Real', 'Ningún proyecto finalizado este mes. La ganancia entra a la bolsita cuando cierras el proyecto.');
+  if(D.esActual) html+=tabla('En curso — lo que falta por entrar',
+    D.activos.map(function(x){ return filaProy(x,x.hoy); }).join(''), 'A hoy', 'No hay proyectos en ejecución.');
+
+  // ── Bolsitas de técnicos ──
+  var sumMeta=0,sumPag=0,sumPend=0;
+  D.tecs.forEach(function(t){ sumMeta+=t.meta; sumPag+=t.pagado; sumPend+=t.pendiente; });
+  var faltaEq = D.tecs.reduce(function(s,t){ return s+Math.max(0,t.meta-t.pagado); },0);
+  var cobertura = sumPend + D.moDisp;
+  var msgEq = !sumMeta ? '' :
+    faltaEq<=0 ? '<b style="color:#16a34a">Ya se cumplió la meta de pago del equipo este mes.</b>' :
+    !D.esActual ? 'Al equipo le faltaron <b>'+fmt(faltaEq)+'</b> para su meta.' :
+    cobertura>=faltaEq ? 'Al equipo le faltan <b>'+fmt(faltaEq)+'</b> y <b style="color:#16a34a">los proyectos actuales alcanzan</b>: hay '+fmt(sumPend)+' pendientes de pago + '+fmt(D.moDisp)+' de mano de obra presupuestada sin ejecutar.' :
+    'Al equipo le faltan <b>'+fmt(faltaEq)+'</b> y los proyectos actuales solo cubren '+fmt(cobertura)+'. <b style="color:#dc2626">Faltan '+fmt(faltaEq-cobertura)+' en mano de obra nueva.</b>';
+  html+='<div style="'+card+'"><div style="'+h4+'">Bolsitas del equipo técnico — pagado en '+_fxMesLabel(mes,true)+'</div>'+
+    (D.tecs.length ? '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:12px">'+D.tecs.map(function(t){
+      var pc=t.meta>0?t.pagado/t.meta*100:0;
+      var pcP=t.meta>0?(t.pagado+t.pendiente)/t.meta*100:0;
+      var c=pc>=100?'#16a34a':'#7c3aed';
+      var nEsc=_fxEsc(t.nombre).replace(/&#39;/g,"\\'");
+      return '<div style="border:1.5px solid var(--border);border-radius:10px;padding:12px;display:flex;gap:10px;align-items:center">'+
+        _bolsaSVG(pc,c,pcP,86)+
+        '<div style="flex:1;min-width:0"><div style="font-weight:800;font-size:13px;color:var(--brand-dark);overflow:hidden;text-overflow:ellipsis">'+_fxEsc(t.nombre)+'</div>'+
+          '<div style="font-size:18px;font-weight:800;color:'+c+'">'+fmt(t.pagado)+'</div>'+
+          '<div style="font-size:10px;color:var(--muted);margin-bottom:6px">'+(t.pendiente>0?'<span style="color:#dc2626;font-weight:700">+ '+fmt(t.pendiente)+' pendiente por pagarle</span>':'sin pagos pendientes')+'</div>'+
+          '<div style="display:flex;align-items:center;gap:6px"><span style="font-size:10px;color:var(--muted)">Meta</span>'+
+          '<input type="number" min="0" step="50000" inputmode="numeric" aria-label="Meta mensual de '+_fxEsc(t.nombre)+'" value="'+(t.meta||'')+'" placeholder="0" style="'+inp+';width:110px;font-size:12px;padding:5px 6px" onchange="_metaSetTecnico(\''+nEsc+'\',\''+mes+'\',this.value)"></div>'+
+          (t.meta>0?'<div style="font-size:10px;margin-top:5px;color:'+(t.pagado>=t.meta?'#16a34a':'var(--muted)')+'">'+(t.pagado>=t.meta?'Meta cumplida':'Le faltan '+fmt(t.meta-t.pagado))+'</div>':'')+
+        '</div></div>';
+    }).join('')+'</div>'+
+    (msgEq?'<div style="margin-top:12px;background:#f8fafc;border-radius:8px;padding:10px 12px;font-size:12px;line-height:1.5">'+msgEq+'</div>':'')
+    : '<div style="font-size:12px;color:var(--muted)">Sin técnicos configurados. Agrégalos en Técnicos → Pagos → Gestionar técnicos.</div>')+
+  '</div>';
+
+  // ── Histórico 12 meses ──
+  var filasH='', maxU=1, hist=[];
+  for(var i=0;i<12;i++){
+    var mm=_fxMesShift(_fxMesActual(),-i), d=_metasDatos(mm);
+    var pagTec=d.tecs.reduce(function(s,t){return s+t.pagado;},0);
+    var gast=(typeof _mgTodos==='function')?_mgTodos().filter(function(g){return g.mes===mm;}).reduce(function(s,g){return s+g.valor;},0):0;
+    if(i>0 && !d.utilidad && !pagTec && !gast && !d.cerrados.length) continue;
+    hist.push({mm:mm,d:d,pagTec:pagTec,gast:gast}); maxU=Math.max(maxU,Math.abs(d.utilidad),d.meta);
+  }
+  hist.forEach(function(x){
+    var pc=x.d.meta>0?Math.round(x.d.utilidad/x.d.meta*100):null;
+    var w=Math.max(0,Math.min(100,x.d.utilidad/maxU*100)), wm=Math.min(100,x.d.meta/maxU*100);
+    filasH+='<tr onclick="_metasSetMes(\''+x.mm+'\');window.scrollTo(0,0)" style="cursor:pointer;border-bottom:1px solid #f0f4f8'+(x.mm===mes?';background:#f0f9ff':'')+'">'+
+      '<td style="padding:8px 6px;font-weight:700;white-space:nowrap">'+_fxMesLabel(x.mm)+'</td>'+
+      '<td style="padding:8px 6px;min-width:120px"><div style="position:relative;background:#f1f5f9;border-radius:4px;height:10px"><div style="background:'+(pc!=null&&pc>=100?'#16a34a':'#0369a1')+';height:10px;border-radius:4px;width:'+w+'%"></div>'+(x.d.meta>0?'<div title="Meta" style="position:absolute;top:-3px;left:calc('+wm+'% - 1px);width:2px;height:16px;background:#0d1f2e"></div>':'')+'</div></td>'+
+      '<td style="padding:8px 6px;text-align:right;font-weight:800;white-space:nowrap;color:'+(x.d.utilidad>=0?'#16a34a':'#dc2626')+'">'+fmt(x.d.utilidad)+'</td>'+
+      '<td style="padding:8px 6px;text-align:right;white-space:nowrap;color:var(--muted)">'+(x.d.meta?fmt(x.d.meta):'—')+'</td>'+
+      '<td style="padding:8px 6px;text-align:right;font-weight:700">'+(pc!=null?pc+'%':'—')+'</td>'+
+      '<td style="padding:8px 6px;text-align:right;white-space:nowrap;color:#7c3aed">'+fmt(x.pagTec)+'</td>'+
+      '<td style="padding:8px 6px;text-align:right;white-space:nowrap;color:#dc2626">'+fmt(x.gast)+'</td></tr>';
+  });
+  html+='<div style="'+card+'"><div style="'+h4+'">Histórico por mes</div><div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:12px"><thead><tr style="font-size:10px;color:var(--muted);text-align:right">'+
+    '<th style="text-align:left;padding:4px 6px">Mes</th><th style="text-align:left;padding:4px 6px">Utilidad vs meta</th><th style="padding:4px 6px">Utilidad</th><th style="padding:4px 6px">Meta</th><th style="padding:4px 6px">%</th><th style="padding:4px 6px">Pagado técnicos</th><th style="padding:4px 6px">Mis gastos</th></tr></thead><tbody>'+filasH+'</tbody></table></div>'+
+    '<div style="font-size:10px;color:var(--muted);margin-top:8px">Toca un mes para abrirlo. La utilidad se carga al mes en que finalizas el proyecto.</div></div>';
+
+  panel.innerHTML=html;
+}
+
+// ───────────────────────── MIS GASTOS ─────────────────────────
+// mis_gastos = [{id, fecha:'YYYY-MM-DD', valor, cat, nota, upd}]
+// Los gastos de Materiales / Mano de obra asociados a un proyecto NO se duplican aquí:
+// viven en proyectos_fin[].gastos con la marca mg:true (una sola fuente de verdad).
+var mis_gastos      = _fxLoad('sedec_mis_gastos_v1', []);
+var _deletedMGIds   = _fxLoad('sedec_deleted_mg_ids', []);
+var MG_FIJAS = [
+  {id:'mat', n:'Materiales',   i:'📦', c:'#0369a1', fija:true},
+  {id:'mo',  n:'Mano de obra', i:'👷', c:'#7c3aed', fija:true}
+];
+var mis_gastos_cats = _fxLoad('sedec_mg_cats_v1', [
+  {id:'gasolina', n:'Gasolina', i:'⛽', c:'#d97706'},
+  {id:'arriendo', n:'Arriendo', i:'🏠', c:'#4f46e5'},
+  {id:'comida',   n:'Comida',   i:'🍽️', c:'#dc2626'},
+  {id:'deporte',  n:'Deporte',  i:'🏋️', c:'#059669'}
+]);
+var MG_PALETA = ['#d97706','#4f46e5','#dc2626','#059669','#0891b2','#db2777','#65a30d','#9333ea','#ea580c','#475569'];
+var MG_PEND = {id:'', n:'Pendiente asignar categoría', i:'❓', c:'#94a3b8'};
+
+function saveMisGastos(){
+  try{ localStorage.setItem('sedec_mis_gastos_v1', JSON.stringify(mis_gastos));
+       localStorage.setItem('sedec_deleted_mg_ids', JSON.stringify(_deletedMGIds.slice(-500))); }catch(e){}
+  if(typeof schedulePush==='function') schedulePush();
+}
+function saveMGCats(){
+  try{ localStorage.setItem('sedec_mg_cats_v1', JSON.stringify(mis_gastos_cats));
+       localStorage.setItem('sedec_mg_cats_ts', Date.now().toString()); }catch(e){}
+  if(typeof schedulePush==='function') schedulePush();
+}
+function _mgCats(){ return MG_FIJAS.concat(mis_gastos_cats); }
+function _mgCat(id){ return _mgCats().find(function(c){ return c.id===id; }) || MG_PEND; }
+
+// Lista unificada: gastos propios + gastos de proyecto registrados desde aquí (mg:true)
+function _mgTodos(){
+  var out=[];
+  mis_gastos.forEach(function(g){
+    var d=_fxParseFecha(g.fecha); if(!d) return;
+    out.push({src:'mg', id:g.id, d:d, iso:_fxISO(d), mes:_fxISO(d).slice(0,7), valor:parseFloat(g.valor)||0, cat:_mgCat(g.cat).id, nota:g.nota||''});
+  });
+  proyectos_fin.forEach(function(p){
+    (p.gastos||[]).forEach(function(g){
+      if(!g.mg) return;
+      var d=_fxParseFecha(g.fechaISO||g.fecha); if(!d) return;
+      out.push({src:'pf', id:g.id, pid:p.id, d:d, iso:_fxISO(d), mes:_fxISO(d).slice(0,7), valor:parseFloat(g.valor)||0,
+        cat:(g.cat==='mo'?'mo':'mat'), nota:g.desc||'', proyecto:p.nombre||'Sin nombre', tecnico:g.tecnico||'', pagado:g.pagado!==false});
+    });
+  });
+  return out;
+}
+function _mgSetMes(m){ window._mgMes=m; window._mgFiltro=null; renderMisGastos(); }
+function _mgSetFiltro(c){ window._mgFiltro = (window._mgFiltro===c ? null : c); renderMisGastos(); }
+
+function renderMisGastos(){
+  var panel=document.getElementById('misGastosContenido'); if(!panel) return;
+  var mes=window._mgMes||_fxMesActual();
+  var filtro=window._mgFiltro;            // null | catId | '' (pendientes)
+  var todos=_mgTodos();
+  var delMes=todos.filter(function(g){ return g.mes===mes; });
+  var total=delMes.reduce(function(s,g){return s+g.valor;},0);
+  var totProy=delMes.filter(function(g){return g.src==='pf';}).reduce(function(s,g){return s+g.valor;},0);
+  var mesAnt=_fxMesShift(mes,-1);
+  var totAnt=todos.filter(function(g){return g.mes===mesAnt;}).reduce(function(s,g){return s+g.valor;},0);
+  var pendTodos=todos.filter(function(g){ return g.cat===''; });
+  var p=mes.split('-'), diasMes=new Date(+p[0],+p[1],0).getDate();
+  var hoy=new Date(), esActual=mes===_fxMesActual();
+  var diasTrans=esActual?hoy.getDate():diasMes;
+  var card='background:#fff;border-radius:12px;border:1px solid var(--border);padding:14px;margin-bottom:14px';
+  var h4='font-size:11px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px';
+
+  // Por categoría
+  var porCat={};
+  delMes.forEach(function(g){ porCat[g.cat]=(porCat[g.cat]||0)+g.valor; });
+  var catsOrden=Object.keys(porCat).sort(function(a,b){ return porCat[b]-porCat[a]; });
+  var top=catsOrden.length?_mgCat(catsOrden[0]):null;
+  var delta = totAnt>0 ? Math.round((total-totAnt)/totAnt*100) : null;
+
+  var html='<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:14px">'+
+    _fxNavMes(mes,'_mgSetMes')+
+    '<div style="display:flex;gap:8px;flex-wrap:wrap">'+
+      '<button onclick="_mgCatsModal()" class="btn btn-o" style="font-size:12px;padding:9px 14px">⚙️ Categorías</button>'+
+      '<button onclick="_mgOpenModal()" class="btn btn-b" style="font-size:12px;padding:9px 16px;font-weight:800">＋ Registrar gasto</button>'+
+    '</div></div>';
+
+  if(pendTodos.length){
+    html+='<div style="background:#fffbeb;border:1.5px solid #fcd34d;border-radius:10px;padding:10px 14px;margin-bottom:14px;display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap">'+
+      '<div style="font-size:12px;color:#92400e"><b>'+pendTodos.length+' gasto(s) pendientes de asignar categoría</b> — '+fmt(pendTodos.reduce(function(s,g){return s+g.valor;},0))+'</div>'+
+      '<button onclick="_mgPendModal()" style="background:#d97706;color:#fff;border:none;border-radius:8px;padding:8px 14px;font-size:12px;font-weight:700;cursor:pointer">Asignar ahora</button></div>';
+  }
+
+  function kpi(l,v,sub,c,bg){ return '<div style="background:'+bg+';border-radius:10px;padding:12px"><div style="font-size:10px;font-weight:700;color:'+c+'">'+l+'</div><div style="font-size:18px;font-weight:800;color:'+c+';line-height:1.2">'+v+'</div><div style="font-size:10px;color:var(--muted);margin-top:2px">'+sub+'</div></div>'; }
+  html+='<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:14px">'+
+    kpi('GASTADO EN EL MES', fmt(total), delMes.length+' registro(s)', '#dc2626', '#fef2f2')+
+    kpi('PROMEDIO DIARIO', fmt(diasTrans?total/diasTrans:0), esActual?'en '+diasTrans+' día(s) del mes':'en '+diasMes+' días', '#0369a1', '#f0f9ff')+
+    kpi('VS '+_fxMesLabel(mesAnt).toUpperCase(), delta==null?'—':(delta>=0?'▲ ':'▼ ')+Math.abs(delta)+'%', totAnt?'antes '+fmt(totAnt):'sin datos del mes anterior', delta!=null&&delta>0?'#dc2626':'#16a34a', delta!=null&&delta>0?'#fef2f2':'#f0fdf4')+
+    kpi('DONDE MÁS SE VA', top?(top.i+' '+_fxEsc(top.n)):'—', top?fmt(porCat[top.id])+' · '+Math.round(porCat[top.id]/total*100)+'%':'sin gastos', '#7c3aed', '#f5f3ff')+
+    (totProy>0?kpi('CARGADO A PROYECTOS', fmt(totProy), 'materiales y mano de obra', '#0f766e', '#f0fdfa'):'')+
+  '</div>';
+
+  if(!delMes.length){
+    html+='<div style="'+card+';text-align:center;padding:36px 16px;color:var(--muted)"><div style="font-size:38px;opacity:.4">👛</div><div style="font-weight:700;margin-top:6px;color:var(--brand-dark)">Sin gastos en '+_fxMesLabel(mes,true)+'</div><div style="font-size:12px;margin-top:4px">Registra el primero con el botón de arriba.</div></div>';
+  } else {
+    // ── Dona + leyenda ──
+    var cum=0, segs='';
+    catsOrden.forEach(function(id){
+      var c=_mgCat(id), pc=porCat[id]/total*100;
+      var dim = (filtro!=null && filtro!==id) ? '.25' : '1';
+      segs+='<circle r="15.915" cx="21" cy="21" fill="none" stroke="'+c.c+'" stroke-width="'+(filtro===id?7:5.5)+'" stroke-dasharray="'+Math.max(0,pc-0.6)+' '+(100-Math.max(0,pc-0.6))+'" stroke-dashoffset="'+((125-cum)%100)+'" opacity="'+dim+'" style="cursor:pointer" onclick="_mgSetFiltro(\''+id+'\')"><title>'+_fxEsc(c.n)+': '+fmt(porCat[id])+'</title></circle>';
+      cum+=pc;
+    });
+    var ley=catsOrden.map(function(id){
+      var c=_mgCat(id), pc=Math.round(porCat[id]/total*100), on=filtro===id;
+      return '<button onclick="_mgSetFiltro(\''+id+'\')" style="display:block;width:100%;text-align:left;background:'+(on?'#f0f9ff':'none')+';border:1.5px solid '+(on?c.c:'transparent')+';border-radius:8px;padding:7px 8px;cursor:pointer;font-family:inherit">'+
+        '<div style="display:flex;justify-content:space-between;gap:8px;font-size:12px"><span style="font-weight:700;color:var(--brand-dark)">'+c.i+' '+_fxEsc(c.n)+'</span><span style="font-weight:800;white-space:nowrap">'+fmt(porCat[id])+' <span style="color:var(--muted);font-weight:600">'+pc+'%</span></span></div>'+
+        '<div style="background:#f1f5f9;border-radius:3px;height:6px;margin-top:4px"><div style="background:'+c.c+';height:6px;border-radius:3px;width:'+Math.max(2,porCat[id]/porCat[catsOrden[0]]*100)+'%"></div></div></button>';
+    }).join('');
+    html+='<div style="'+card+'"><div style="'+h4+'">En qué se fue la plata — toca una categoría para ver el detalle</div>'+
+      '<div style="display:flex;gap:18px;align-items:center;flex-wrap:wrap">'+
+        '<svg viewBox="0 0 42 42" width="170" height="170" style="flex-shrink:0;margin:0 auto" role="img" aria-label="Gastos por categoría"><circle r="15.915" cx="21" cy="21" fill="none" stroke="#f1f5f9" stroke-width="5.5"/>'+segs+
+          '<text x="21" y="20.5" text-anchor="middle" font-size="3" fill="#64748b" font-weight="700">'+(filtro!=null?_fxEsc(_mgCat(filtro).n).slice(0,14):'TOTAL')+'</text>'+
+          '<text x="21" y="25" text-anchor="middle" font-size="4.2" fill="#0d1f2e" font-weight="800">$'+_fxFmtK(filtro!=null?(porCat[filtro]||0):total)+'</text></svg>'+
+        '<div style="flex:1;min-width:230px">'+ley+'</div>'+
+      '</div></div>';
+
+    // ── Barras por día ──
+    var porDia=[], maxD=1;
+    for(var d=1;d<=diasMes;d++) porDia.push(0);
+    delMes.forEach(function(g){ if(filtro==null||g.cat===filtro){ porDia[g.d.getDate()-1]+=g.valor; } });
+    porDia.forEach(function(v){ if(v>maxD) maxD=v; });
+    var bars='', labs='';
+    var colB = filtro!=null ? _mgCat(filtro).c : '#365979';
+    porDia.forEach(function(v,i){
+      var hh=v>0?Math.max(3,v/maxD*100):0;
+      var esHoy=esActual&&(i+1)===hoy.getDate();
+      bars+='<div title="'+(i+1)+' '+FX_MESES_C[+p[1]-1]+': '+fmt(v)+'" style="flex:1;height:'+hh+'%;background:'+colB+';opacity:'+(esHoy?1:.72)+';border-radius:2px 2px 0 0;min-width:0"></div>';
+      labs+='<div style="flex:1;text-align:center;font-size:9px;color:'+(esHoy?'var(--brand-dark)':'#94a3b8')+';font-weight:'+(esHoy?800:500)+';min-width:0;overflow:visible;white-space:nowrap">'+(((i+1)===1||(i+1)%5===0||esHoy)?(i+1):'')+'</div>';
+    });
+    html+='<div style="'+card+'"><div style="'+h4+'">Día a día'+(filtro!=null?' — '+_fxEsc(_mgCat(filtro).n):'')+' <span style="text-transform:none;font-weight:600">· día más alto '+fmt(maxD>1?maxD:0)+'</span></div>'+
+      '<div style="display:flex;align-items:flex-end;gap:2px;height:120px;border-bottom:1px solid #e2e8f0">'+bars+'</div>'+
+      '<div style="display:flex;gap:2px;margin-top:3px">'+labs+'</div></div>';
+  }
+
+  // ── Tendencia 6 meses ──
+  var tend=[], maxT=1;
+  for(var k=5;k>=0;k--){ var mm=_fxMesShift(_fxMesActual(),-k); var v=todos.filter(function(g){return g.mes===mm;}).reduce(function(s,g){return s+g.valor;},0); tend.push({mm:mm,v:v}); if(v>maxT) maxT=v; }
+  if(tend.some(function(t){return t.v>0;})){
+    html+='<div style="'+card+'"><div style="'+h4+'">Últimos 6 meses</div><div style="display:flex;gap:8px;align-items:flex-end;height:120px">'+
+      tend.map(function(t){
+        var on=t.mm===mes;
+        return '<button onclick="_mgSetMes(\''+t.mm+'\')" style="flex:1;background:none;border:none;cursor:pointer;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;height:100%;padding:0;font-family:inherit">'+
+          '<div style="font-size:10px;font-weight:700;color:'+(on?'var(--brand-dark)':'var(--muted)')+'">'+(t.v?'$'+_fxFmtK(t.v):'')+'</div>'+
+          '<div style="width:100%;max-width:54px;height:'+Math.max(2,t.v/maxT*78)+'px;background:'+(on?'#dc2626':'#fca5a5')+';border-radius:5px 5px 0 0;margin-top:3px"></div>'+
+          '<div style="font-size:10px;margin-top:4px;font-weight:'+(on?800:600)+';color:'+(on?'var(--brand-dark)':'var(--muted)')+'">'+_fxMesLabel(t.mm)+'</div></button>';
+      }).join('')+'</div></div>';
+  }
+
+  // ── Lista ──
+  var lista=delMes.filter(function(g){ return filtro==null || g.cat===filtro; }).sort(function(a,b){ return b.d-a.d || (a.id<b.id?1:-1); });
+  var listaHtml='', diaAct='';
+  var DIAS=['dom','lun','mar','mié','jue','vie','sáb'];
+  lista.forEach(function(g){
+    if(g.iso!==diaAct){
+      diaAct=g.iso;
+      var totDia=lista.filter(function(x){return x.iso===g.iso;}).reduce(function(s,x){return s+x.valor;},0);
+      listaHtml+='<div style="display:flex;justify-content:space-between;font-size:10px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;padding:10px 0 4px;border-bottom:1px solid var(--border)"><span>'+DIAS[g.d.getDay()]+' '+g.d.getDate()+' '+FX_MESES_C[g.d.getMonth()]+'</span><span>'+fmt(totDia)+'</span></div>';
+    }
+    var c=_mgCat(g.cat);
+    listaHtml+='<div style="display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid #f0f4f8">'+
+      '<div style="width:34px;height:34px;border-radius:9px;background:'+c.c+'1f;display:flex;align-items:center;justify-content:center;font-size:17px;flex-shrink:0">'+c.i+'</div>'+
+      '<div style="flex:1;min-width:0"><div style="font-size:12px;font-weight:700;color:var(--brand-dark);overflow:hidden;text-overflow:ellipsis">'+_fxEsc(g.nota||c.n)+'</div>'+
+        '<div style="font-size:10px;color:var(--muted)">'+_fxEsc(c.n)+
+          (g.src==='pf'?' · <span style="color:#0f766e;font-weight:700">🏗️ '+_fxEsc(g.proyecto)+'</span>'+(g.tecnico?' · '+_fxEsc(g.tecnico)+(g.pagado?'':' <span style="color:#dc2626;font-weight:700">(pendiente)</span>'):''):'')+'</div></div>'+
+      '<div style="font-size:13px;font-weight:800;color:#dc2626;white-space:nowrap">-'+fmt(g.valor)+'</div>'+
+      '<button aria-label="Editar gasto" onclick="_mgOpenModal(\''+g.src+'\',\''+g.id+'\')" style="background:none;border:none;cursor:pointer;font-size:14px;padding:6px">✏️</button>'+
+      '<button aria-label="Borrar gasto" onclick="_mgBorrar(\''+g.src+'\',\''+g.id+'\')" style="background:none;border:none;cursor:pointer;font-size:14px;padding:6px">🗑️</button>'+
+    '</div>';
+  });
+  if(delMes.length){
+    html+='<div style="'+card+'"><div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap"><div style="'+h4+';margin:0">Movimientos'+(filtro!=null?' — '+_fxEsc(_mgCat(filtro).n):'')+' ('+lista.length+')</div>'+
+      (filtro!=null?'<button onclick="_mgSetFiltro(window._mgFiltro)" style="background:#f1f5f9;border:none;border-radius:6px;padding:5px 10px;font-size:11px;font-weight:700;color:var(--brand-dark);cursor:pointer">✕ Quitar filtro</button>':'')+'</div>'+
+      (listaHtml||'<div style="font-size:12px;color:var(--muted);padding:10px 0">Sin movimientos.</div>')+'</div>';
+  }
+  panel.innerHTML=html;
+}
+
+function _mgFind(src,id){
+  if(src==='mg'){ var g=mis_gastos.find(function(x){return x.id===id;}); return g?{g:g}:null; }
+  for(var pi=0;pi<proyectos_fin.length;pi++){
+    var gi=(proyectos_fin[pi].gastos||[]).findIndex(function(x){return x.id===id && x.mg;});
+    if(gi>=0) return {g:proyectos_fin[pi].gastos[gi], p:proyectos_fin[pi], pi:pi, gi:gi};
+  }
+  return null;
+}
+function _mgQuitar(src,id){
+  var f=_mgFind(src,id); if(!f) return;
+  if(src==='mg'){ mis_gastos.splice(mis_gastos.indexOf(f.g),1); if(_deletedMGIds.indexOf(id)<0) _deletedMGIds.push(id); }
+  else f.p.gastos.splice(f.gi,1);
+}
+function _mgRefrescarTodo(){
+  renderMisGastos();
+  if(typeof finTab_active!=='undefined'){
+    if(finTab_active==='proyectos' && typeof renderProyectosFin==='function') renderProyectosFin();
+    if(finTab_active==='utilidad') renderMetasPanel();
+  }
+}
+function _mgBorrar(src,id){
+  var f=_mgFind(src,id); if(!f) return;
+  if(!confirm(src==='pf' ? '¿Borrar este gasto? También se quita del proyecto "'+(f.p.nombre||'')+'".' : '¿Borrar este gasto?')) return;
+  _mgQuitar(src,id);
+  if(src==='pf') saveProyectosFin();
+  saveMisGastos();
+  _mgRefrescarTodo();
+  toast('🗑️ Gasto eliminado','ok');
+}
+
+// Modal registrar / editar
+function _mgOpenModal(src,id){
+  var ed = (src&&id) ? _mgFind(src,id) : null;
+  var st = window._mgForm = {
+    src: ed?src:null, id: ed?id:null,
+    cat: ed ? (src==='pf'?(ed.g.cat==='mo'?'mo':'mat'):_mgCat(ed.g.cat).id) : (window._mgFiltro||null),
+    pid: ed&&ed.p ? ed.p.id : ''
+  };
+  if(st.cat==='') st.cat=null;
+  var fechaIni = ed ? _fxISO(_fxParseFecha(ed.g.fechaISO||ed.g.fecha)||new Date()) : _fxISO(new Date());
+  var notaIni  = ed ? (src==='pf'?(ed.g.desc||''):(ed.g.nota||'')) : '';
+  var old=document.getElementById('_mgModal'); if(old) old.remove();
+  var modal=document.createElement('div');
+  modal.id='_mgModal'; modal.className='overlay'; modal.style.cssText='display:flex;z-index:9999';
+  var inp='width:100%;border:1.5px solid var(--border);border-radius:8px;padding:10px;font-size:14px;box-sizing:border-box;outline:none;font-family:inherit';
+  modal.innerHTML='<div class="modal" style="max-width:460px;width:100%;max-height:92vh;overflow-y:auto">'+
+    '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px"><h3 style="margin:0">'+(ed?'✏️ Editar gasto':'👛 Registrar gasto')+'</h3>'+
+      '<button aria-label="Cerrar" onclick="document.getElementById(\'_mgModal\').remove()" style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--muted)">✕</button></div>'+
+    '<label style="font-size:11px;font-weight:700;color:var(--muted)">Valor (COP)</label>'+
+    '<input id="_mgVal" type="number" inputmode="numeric" min="0" placeholder="0" value="'+(ed?(parseFloat(ed.g.valor)||''):'')+'" style="'+inp+';font-size:24px;font-weight:800;text-align:right;margin-bottom:10px">'+
+    '<label style="font-size:11px;font-weight:700;color:var(--muted)">Categoría</label>'+
+    '<div id="_mgChips" style="display:flex;flex-wrap:wrap;gap:6px;margin:4px 0 10px"></div>'+
+    '<div id="_mgProyBox"></div>'+
+    '<div style="display:grid;grid-template-columns:1fr 150px;gap:8px">'+
+      '<div><label style="font-size:11px;font-weight:700;color:var(--muted)">¿En qué fue?</label><input id="_mgNota" type="text" placeholder="Ej: tanqueada, almuerzo, cable UTP…" value="'+_fxEsc(notaIni)+'" style="'+inp+'"></div>'+
+      '<div><label style="font-size:11px;font-weight:700;color:var(--muted)">Fecha</label><input id="_mgFecha" type="date" value="'+fechaIni+'" style="'+inp+'"></div>'+
+    '</div>'+
+    '<div style="display:flex;gap:8px;margin-top:16px">'+
+      '<button class="btn btn-b" style="flex:1;justify-content:center;padding:12px;font-size:14px;font-weight:800" onclick="_mgGuardar(false)">💾 Guardar</button>'+
+      (ed?'':'<button class="btn btn-o" style="justify-content:center;padding:12px;font-size:12px" onclick="_mgGuardar(true)">Guardar y otro</button>')+
+    '</div></div>';
+  document.body.appendChild(modal);
+  if(ed&&src==='pf'){ st.tec=ed.g.tecnico||''; st.pagado=ed.g.pagado!==false; }
+  _mgRenderChips();
+  setTimeout(function(){ var v=document.getElementById('_mgVal'); if(v&&!ed) v.focus(); },60);
+}
+function _mgPickCat(id){ window._mgForm.cat=id; _mgRenderChips(); }
+function _mgRenderChips(){
+  var st=window._mgForm, box=document.getElementById('_mgChips'); if(!box||!st) return;
+  box.innerHTML=_mgCats().map(function(c){
+    var on=st.cat===c.id;
+    return '<button onclick="_mgPickCat(\''+c.id+'\')" style="border:1.5px solid '+(on?c.c:'var(--border)')+';background:'+(on?c.c:'#fff')+';color:'+(on?'#fff':'var(--brand-dark)')+';border-radius:20px;padding:8px 12px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit">'+c.i+' '+_fxEsc(c.n)+(c.fija?' 🏗️':'')+'</button>';
+  }).join('')+'<button onclick="_mgNuevaCatRapida()" style="border:1.5px dashed var(--border);background:#fff;color:var(--muted);border-radius:20px;padding:8px 12px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit">＋ Nueva</button>';
+  var pb=document.getElementById('_mgProyBox');
+  if(st.cat==='mat'||st.cat==='mo'){
+    var sel='width:100%;border:1.5px solid var(--border);border-radius:8px;padding:10px;font-size:13px;box-sizing:border-box;background:#fff;font-family:inherit';
+    var opts='<option value="">Selecciona el proyecto…</option>'+
+      proyectos_fin.filter(function(p){ return !p.cerrado || p.id===st.pid; }).map(function(p){
+        var disp = st.cat==='mo' ? (p.presupMO||0)-_pfSum(p.gastos,function(g){return g.cat==='mo';}) : (p.presupMat||0)-_pfSum(p.gastos,function(g){return g.cat==='mat';});
+        return '<option value="'+_fxEsc(p.id)+'"'+(st.pid===p.id?' selected':'')+'>'+_fxEsc(p.nombre||'Sin nombre')+' — '+_fxEsc(p.cliente||'')+' (disp. '+fmt(disp)+')</option>';
+      }).join('')+'<option value="__none"'+(st.pid==='__none'?' selected':'')+'>Sin proyecto (gasto general)</option>';
+    var tecHtml='';
+    if(st.cat==='mo'){
+      tecHtml='<div style="display:grid;grid-template-columns:1fr auto;gap:8px;margin-top:8px;align-items:center">'+
+        '<select id="_mgTec" onchange="window._mgForm.tec=this.value" style="'+sel+'"><option value="">— Técnico sin asignar —</option>'+TECNICOS_NAMES.map(function(n){ return '<option value="'+_fxEsc(n)+'"'+(st.tec===n?' selected':'')+'>'+_fxEsc(n)+'</option>'; }).join('')+'</select>'+
+        '<label style="display:flex;align-items:center;gap:5px;font-size:11px;font-weight:700;color:var(--brand-dark);cursor:pointer"><input type="checkbox" id="_mgPagado" '+(st.pagado===false?'':'checked')+' onchange="window._mgForm.pagado=this.checked" style="width:16px;height:16px"> Ya pagado</label></div>';
+    }
+    pb.innerHTML='<div style="background:#f0fdfa;border:1.5px solid #99f6e4;border-radius:10px;padding:10px;margin-bottom:10px">'+
+      '<label style="font-size:11px;font-weight:700;color:#0f766e">🏗️ Proyecto al que se carga</label>'+
+      '<select id="_mgProy" onchange="window._mgForm.pid=this.value" style="'+sel+';margin-top:4px">'+opts+'</select>'+tecHtml+
+      '<div style="font-size:10px;color:#0f766e;margin-top:6px">Queda registrado en Finanzas → Proyectos como '+(st.cat==='mo'?'Mano de obra':'Material')+' y descuenta de la utilidad real del proyecto.</div></div>';
+  } else pb.innerHTML='';
+}
+function _mgNuevaCatRapida(){
+  var n=(prompt('Nombre de la nueva categoría:','')||'').trim(); if(!n) return;
+  var c=_mgAddCat(n); window._mgForm.cat=c.id; _mgRenderChips();
+}
+function _mgAddCat(nombre, icono){
+  var ex=mis_gastos_cats.find(function(c){ return c.n.toLowerCase()===nombre.toLowerCase(); });
+  if(ex) return ex;
+  var c={id:'c'+Date.now().toString(36)+Math.random().toString(36).slice(2,5), n:nombre, i:icono||'🏷️', c:MG_PALETA[mis_gastos_cats.length%MG_PALETA.length]};
+  mis_gastos_cats.push(c); saveMGCats(); return c;
+}
+function _mgGuardar(otro){
+  var st=window._mgForm; if(!st) return;
+  var valor=parseFloat(document.getElementById('_mgVal').value)||0;
+  var nota=(document.getElementById('_mgNota').value||'').trim();
+  var fechaISO=document.getElementById('_mgFecha').value||_fxISO(new Date());
+  if(valor<=0){ toast('Ingresa un valor válido','err'); return; }
+  if(st.cat==null){ toast('Elige una categoría','err'); return; }
+  var aProyecto = (st.cat==='mat'||st.cat==='mo') && st.pid && st.pid!=='__none';
+  if((st.cat==='mat'||st.cat==='mo') && !st.pid){ toast('Selecciona el proyecto (o "Sin proyecto")','err'); return; }
+  var p = aProyecto ? proyectos_fin.find(function(x){ return x.id===st.pid; }) : null;
+  if(aProyecto && !p){ toast('No se encontró el proyecto','err'); return; }
+  var tocoProy=false;
+  // Edición: se quita el registro anterior y se vuelve a crear donde corresponda (conserva el id)
+  var idPrev=null;
+  if(st.id){ idPrev=st.id; if(st.src==='pf') tocoProy=true; _mgQuitar(st.src, st.id);
+    if(st.src==='mg' && !aProyecto){ var ix=_deletedMGIds.indexOf(st.id); if(ix>=0) _deletedMGIds.splice(ix,1); } }
+  if(aProyecto){
+    if(!p.gastos) p.gastos=[];
+    p.gastos.push({ id:(st.src==='pf'&&idPrev)?idPrev:'G-'+Date.now().toString().slice(-8), cat:st.cat, valor:valor,
+      desc: nota || (st.cat==='mo'?'Mano de obra':'Compra material'),
+      tecnico: st.cat==='mo' ? (st.tec||'') : '',
+      fecha: new Date(fechaISO+'T12:00:00').toLocaleDateString('es-CO'), fechaISO:fechaISO,
+      pagado: st.cat==='mo' ? (st.pagado!==false) : true, mg:true });
+    tocoProy=true;
+  } else {
+    mis_gastos.push({ id:(st.src==='mg'&&idPrev)?idPrev:'MG-'+Date.now().toString(36)+Math.random().toString(36).slice(2,5),
+      fecha:fechaISO, valor:valor, cat:st.cat, nota:nota, upd:Date.now() });
+  }
+  if(tocoProy) saveProyectosFin();
+  saveMisGastos();
+  window._mgMes=fechaISO.slice(0,7);
+  toast('💸 Gasto guardado: '+fmt(valor)+(p?' → '+(p.nombre||'proyecto'):''),'ok');
+  if(otro){
+    st.src=null; st.id=null;
+    document.getElementById('_mgVal').value=''; document.getElementById('_mgNota').value='';
+    document.getElementById('_mgVal').focus();
+  } else { var m=document.getElementById('_mgModal'); if(m) m.remove(); }
+  _mgRefrescarTodo();
+}
+
+// Gestor de categorías
+function _mgCatsModal(){
+  var old=document.getElementById('_mgCatsM'); if(old) old.remove();
+  var modal=document.createElement('div');
+  modal.id='_mgCatsM'; modal.className='overlay'; modal.style.cssText='display:flex;z-index:9999';
+  modal.innerHTML='<div class="modal" style="max-width:440px;width:100%;max-height:90vh;overflow-y:auto">'+
+    '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px"><h3 style="margin:0">⚙️ Categorías de gasto</h3>'+
+    '<button aria-label="Cerrar" onclick="document.getElementById(\'_mgCatsM\').remove();renderMisGastos()" style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--muted)">✕</button></div>'+
+    '<div id="_mgCatsList"></div>'+
+    '<div style="display:flex;gap:6px;margin-top:12px"><input id="_mgNewIco" type="text" maxlength="4" placeholder="🏷️" aria-label="Ícono" style="width:52px;text-align:center;border:1.5px solid var(--border);border-radius:8px;padding:9px;font-size:16px">'+
+    '<input id="_mgNewNom" type="text" placeholder="Nueva categoría…" aria-label="Nombre de la nueva categoría" onkeydown="if(event.key===\'Enter\')_mgCatAdd()" style="flex:1;border:1.5px solid var(--border);border-radius:8px;padding:9px;font-size:13px">'+
+    '<button class="btn btn-b" onclick="_mgCatAdd()" style="padding:9px 14px;font-weight:800">＋ Agregar</button></div>'+
+    '<div style="font-size:10px;color:var(--muted);margin-top:10px;line-height:1.5">Al eliminar una categoría, sus gastos no se borran: quedan como "Pendiente asignar categoría" para que los reasignes. Materiales y Mano de obra son fijas porque conectan con los proyectos.</div></div>';
+  document.body.appendChild(modal);
+  _mgCatsRender();
+}
+function _mgCatsRender(){
+  var box=document.getElementById('_mgCatsList'); if(!box) return;
+  var uso={}; mis_gastos.forEach(function(g){ uso[g.cat]=(uso[g.cat]||0)+1; });
+  var row='display:flex;align-items:center;gap:6px;padding:6px 0;border-bottom:1px solid #f0f4f8';
+  box.innerHTML=MG_FIJAS.map(function(c){
+    return '<div style="'+row+';opacity:.7"><span style="width:44px;text-align:center;font-size:17px">'+c.i+'</span><span style="flex:1;font-size:13px;font-weight:700">'+c.n+'</span><span style="font-size:10px;color:var(--muted)">fija · va a proyectos</span></div>';
+  }).join('')+mis_gastos_cats.map(function(c,i){
+    return '<div style="'+row+'">'+
+      '<input type="text" maxlength="4" value="'+_fxEsc(c.i)+'" aria-label="Ícono" onchange="_mgCatEdit('+i+',\'i\',this.value)" style="width:44px;text-align:center;border:1.5px solid var(--border);border-radius:6px;padding:6px 2px;font-size:16px">'+
+      '<input type="text" value="'+_fxEsc(c.n)+'" aria-label="Nombre" onchange="_mgCatEdit('+i+',\'n\',this.value)" style="flex:1;min-width:0;border:1.5px solid var(--border);border-radius:6px;padding:7px 8px;font-size:13px;font-weight:700">'+
+      '<input type="color" value="'+c.c+'" aria-label="Color" onchange="_mgCatEdit('+i+',\'c\',this.value)" style="width:34px;height:34px;border:none;background:none;padding:0;cursor:pointer">'+
+      '<span style="font-size:10px;color:var(--muted);min-width:22px;text-align:right">'+(uso[c.id]||0)+'</span>'+
+      '<button aria-label="Eliminar categoría" onclick="_mgCatDel('+i+')" style="background:#fef2f2;color:#dc2626;border:1px solid #fecaca;border-radius:6px;padding:6px 9px;font-size:12px;cursor:pointer">🗑️</button></div>';
+  }).join('');
+}
+function _mgCatEdit(i,campo,val){
+  var c=mis_gastos_cats[i]; if(!c) return;
+  val=String(val||'').trim(); if(!val){ _mgCatsRender(); return; }
+  c[campo]=val; saveMGCats(); _mgCatsRender();
+}
+function _mgCatAdd(){
+  var n=(document.getElementById('_mgNewNom').value||'').trim(); if(!n){ toast('Escribe el nombre','err'); return; }
+  _mgAddCat(n,(document.getElementById('_mgNewIco').value||'').trim());
+  document.getElementById('_mgNewNom').value=''; document.getElementById('_mgNewIco').value='';
+  _mgCatsRender();
+}
+function _mgCatDel(i){
+  var c=mis_gastos_cats[i]; if(!c) return;
+  var n=mis_gastos.filter(function(g){return g.cat===c.id;}).length;
+  if(!confirm('¿Eliminar la categoría "'+c.n+'"?'+(n?'\n\nSus '+n+' gasto(s) NO se borran: quedan como "Pendiente asignar categoría".':''))) return;
+  mis_gastos_cats.splice(i,1); saveMGCats(); _mgCatsRender();
+}
+// Reasignar gastos sin categoría
+function _mgPendModal(){
+  var old=document.getElementById('_mgPendM'); if(old) old.remove();
+  var pend=mis_gastos.filter(function(g){ return _mgCat(g.cat).id===''; });
+  if(!pend.length){ renderMisGastos(); return; }
+  var opts='<option value="">Asignar a…</option>'+mis_gastos_cats.map(function(c){ return '<option value="'+c.id+'">'+c.i+' '+_fxEsc(c.n)+'</option>'; }).join('');
+  var sel='border:1.5px solid var(--border);border-radius:6px;padding:7px;font-size:12px;background:#fff;font-family:inherit;max-width:150px';
+  var modal=document.createElement('div');
+  modal.id='_mgPendM'; modal.className='overlay'; modal.style.cssText='display:flex;z-index:9999';
+  modal.innerHTML='<div class="modal" style="max-width:480px;width:100%;max-height:90vh;overflow-y:auto">'+
+    '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px"><h3 style="margin:0">❓ Pendientes de categoría ('+pend.length+')</h3>'+
+    '<button aria-label="Cerrar" onclick="document.getElementById(\'_mgPendM\').remove();renderMisGastos()" style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--muted)">✕</button></div>'+
+    '<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;background:#f8fafc;border-radius:8px;padding:8px 10px;margin-bottom:8px"><span style="font-size:12px;font-weight:700">Todos de una</span><select onchange="_mgPendAsignar(null,this.value)" style="'+sel+'">'+opts+'</select></div>'+
+    pend.map(function(g){
+      return '<div style="display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid #f0f4f8"><div style="flex:1;min-width:0"><div style="font-size:12px;font-weight:700;overflow:hidden;text-overflow:ellipsis">'+_fxEsc(g.nota||'Sin descripción')+'</div><div style="font-size:10px;color:var(--muted)">'+g.fecha+' · '+fmt(g.valor)+'</div></div>'+
+        '<select onchange="_mgPendAsignar(\''+g.id+'\',this.value)" style="'+sel+'">'+opts+'</select></div>';
+    }).join('')+'</div>';
+  document.body.appendChild(modal);
+}
+function _mgPendAsignar(id,catId){
+  if(!catId) return;
+  mis_gastos.forEach(function(g){ if((id==null||g.id===id) && _mgCat(g.cat).id===''){ g.cat=catId; g.upd=Date.now(); } });
+  saveMisGastos(); _mgPendModal();
+  if(!document.getElementById('_mgPendM')) toast('✅ Categorías asignadas','ok');
+}
+
+// Sync: se llama desde applySyncPackage
+function _fxApplySync(pkg, changed){
+  if(Array.isArray(pkg.misGastosDel)){
+    pkg.misGastosDel.forEach(function(id){ if(_deletedMGIds.indexOf(id)<0) _deletedMGIds.push(id); });
+  }
+  if(Array.isArray(pkg.misGastos)){
+    var loc={}; mis_gastos.forEach(function(g){ loc[g.id]=g; });
+    var res={};
+    pkg.misGastos.forEach(function(r){ var l=loc[r.id]; res[r.id] = (l && (l.upd||0)>(r.upd||0)) ? l : r; });
+    mis_gastos.forEach(function(g){ if(!res[g.id]) res[g.id]=g; });
+    mis_gastos=Object.keys(res).map(function(k){return res[k];}).filter(function(g){ return _deletedMGIds.indexOf(g.id)<0; });
+    try{ localStorage.setItem('sedec_mis_gastos_v1', JSON.stringify(mis_gastos));
+         localStorage.setItem('sedec_deleted_mg_ids', JSON.stringify(_deletedMGIds.slice(-500))); }catch(e){}
+    changed.push(mis_gastos.length+' gastos personales');
+  }
+  if(Array.isArray(pkg.misGastosCats)){
+    var lt=parseInt(localStorage.getItem('sedec_mg_cats_ts')||'0'), rt=parseInt(pkg.misGastosCatsTs||'0');
+    if(rt>lt){ mis_gastos_cats=pkg.misGastosCats;
+      try{ localStorage.setItem('sedec_mg_cats_v1', JSON.stringify(mis_gastos_cats)); localStorage.setItem('sedec_mg_cats_ts', String(rt)); }catch(e){} }
+  }
+  if(pkg.metas && typeof pkg.metas==='object' && (pkg.metas.upd||0)>(metas_data.upd||0)){
+    metas_data=pkg.metas; if(!metas_data.utilidad) metas_data.utilidad={}; if(!metas_data.tecnicos) metas_data.tecnicos={};
+    try{ localStorage.setItem('sedec_metas_v1', JSON.stringify(metas_data)); }catch(e){}
+    changed.push('metas');
+  }
+  var t=document.getElementById('tab-misgastos');
+  if(t && t.style.display!=='none' && !document.getElementById('_mgModal') && !document.getElementById('_mgCatsM') && !document.getElementById('_mgPendM')) renderMisGastos();
+}
+
+// ───────────── RECIBO DE PAGO (sello CANCELADO) desde una Cuenta de Cobro ─────────────
+function _ccGenerarReciboPago(idx){
+  var rec=cuentas_cobro[idx]; if(!rec) return;
+  var now=new Date();
+  var hoyTxt=now.getDate()+' de '+FX_MESES_L[now.getMonth()]+' de '+now.getFullYear();
+  if(!rec.pagado){
+    if(!confirm('¿El cliente ya canceló esta cuenta?\n\nSe marcará como PAGADA y se generará el Recibo de Pago con sello CANCELADO.')) return;
+    rec.pagado=true; rec.fechaPago=hoyTxt;
+  }
+  if(!rec.reciboNum){ rec.reciboNum='RP-'+String(rec.numDoc||rec.id).replace(/^CB-/,''); rec.reciboFecha=rec.fechaPago||hoyTxt; }
+  saveCuentasCobro();
+  renderCuentasCobroTab();
+  var doc={}; for(var k in rec) doc[k]=rec[k];
+  doc.billingType='recibo'; doc._sello='cancelado'; doc._refDoc=rec.numDoc; doc._refTipo=rec.billingType;
+  doc.numDoc=rec.reciboNum; doc.dateStr=rec.reciboFecha; doc.evidencias=[];
+  _ccAbrirDocumento(doc);
+}
+
+
 // ── Pagos a técnicos NO vinculados a un proyecto (jornales/tareas sueltas o ──
 // gastos generales del negocio: mantenimiento, comisiones, etc.). Misma forma
 // de dato que un gasto 'mo' de proyectos_fin (id,valor,desc,tecnico,fecha,pagado)
@@ -10302,6 +10918,7 @@ function renderProyectosFin() {
           '<b style="color:var(--brand-dark)">'+(g.cat==='mo'?'👷 MO':'📦 '+(g.cat==='mat'?'Material':'Otro'))+'</b>'+
           (g.tecnico?' <span style="color:#7c3aed;font-size:10px">'+g.tecnico+'</span>':'')+
           badgeMO+
+          (g.mg?' <span title="Registrado desde Mis gastos" style="font-size:9px;font-weight:800;color:#0f766e;background:#f0fdfa;border-radius:8px;padding:1px 6px">👛 Mis gastos</span>':'')+
           ' — '+g.desc+
           '<div style="font-size:9px;color:var(--muted)">'+g.fecha+'</div>'+
         '</div>'+
@@ -10358,6 +10975,16 @@ function renderProyectosFin() {
             '<div style="font-size:10px;font-weight:700;color:'+(utilidad>=0?'#16a34a':'#dc2626')+'">💰 Utilidad</div>'+
             '<div style="font-size:16px;font-weight:800;color:'+(utilidad>=0?'#16a34a':'#dc2626')+'">'+fmt(utilidad)+'</div>'+
           '</div>'+
+          (function(){
+            var est=_pfGananciaEst(p); if(est==null) return '';
+            var dif=utilidad-est;
+            return '<div style="display:flex;justify-content:space-between;align-items:baseline;margin-top:2px">'+
+                '<div style="font-size:9px;color:var(--muted)">📐 Ganancia estimada</div>'+
+                '<div style="font-size:12px;font-weight:700;color:var(--brand-dark)">'+fmt(est)+'</div></div>'+
+              '<div style="display:flex;justify-content:space-between;align-items:baseline">'+
+                '<div style="font-size:9px;color:var(--muted)">'+(p.cerrado?'Real vs estimada':'A hoy vs estimada')+'</div>'+
+                '<div style="font-size:11px;font-weight:800;color:'+(dif>=0?'#16a34a':'#dc2626')+'">'+(dif>=0?'▲ ':'▼ ')+fmt(Math.abs(dif))+'</div></div>';
+          })()+
           '<div style="border-top:1px solid #dcfce7;margin-top:6px;padding-top:6px">'+
             '<div style="font-size:9px;font-weight:700;color:var(--muted);margin-bottom:3px">Flujo de caja</div>'+
             '<div style="display:flex;justify-content:space-between;align-items:baseline">'+
@@ -10735,12 +11362,15 @@ function _pfCerrar(pi) {
   if(p.cerrado) {
     if(!confirm('¿Reabrir el proyecto "'+p.nombre+'"?')) return;
     p.cerrado = false;
+    delete p.gananciaEst;
     toast('↩️ Proyecto reabierto','ok');
   } else {
     if(!confirm('¿Marcar "'+p.nombre+'" como finalizado?\nEl proyecto se moverá a la sección de Finalizados al fondo.')) return;
+    var _estC = _pfGananciaEst(p);
     p.cerrado = true;
     p.fechaCierre = new Date().toLocaleDateString('es-CO');
-    toast('🏁 Proyecto finalizado','ok');
+    if(_estC!=null) p.gananciaEst = _estC;   // foto de la estimada al momento del cierre
+    toast('🏁 Finalizado — ganancia real '+fmt(_pfGananciaReal(p))+(_estC!=null?' (estimada '+fmt(_estC)+')':'')+' → va a tu bolsita del mes','ok');
   }
   saveProyectosFin();
   renderProyectosFin();
@@ -10756,12 +11386,15 @@ function _pfCerrarDesdeHistorial(cotId) {
   if(p.cerrado) {
     if(!confirm('¿Reabrir el proyecto "'+p.nombre+'"?')) return;
     p.cerrado = false;
+    delete p.gananciaEst;
     toast('↩️ Proyecto reabierto','ok');
   } else {
     if(!confirm('¿Finalizar el proyecto "'+p.nombre+'"?\nSe moverá a la sección de Finalizados en Finanzas → Proyectos.')) return;
+    var _estC = _pfGananciaEst(p);
     p.cerrado = true;
     p.fechaCierre = new Date().toLocaleDateString('es-CO');
-    toast('🏁 Proyecto finalizado','ok');
+    if(_estC!=null) p.gananciaEst = _estC;   // foto de la estimada al momento del cierre
+    toast('🏁 Finalizado — ganancia real '+fmt(_pfGananciaReal(p))+(_estC!=null?' (estimada '+fmt(_estC)+')':'')+' → va a tu bolsita del mes','ok');
   }
   saveProyectosFin();
   renderHistorial();
@@ -11292,7 +11925,7 @@ function _mnavActive(tab) {
     if(btn) btn.classList.toggle('active', t===tab);
   });
   // Si es catalogo o tecnicos, activar "mas"
-  if(tab==='catalogo'||tab==='tecnicos') {
+  if(tab==='catalogo'||tab==='tecnicos'||tab==='actividades'||tab==='agenda'||tab==='recibos'||tab==='misgastos') {
     var mas = document.getElementById('mnav-mas');
     if(mas) mas.classList.add('active');
   }
@@ -12079,6 +12712,9 @@ window.addEventListener('load', function() {
     </button>
     <button class="mobile-menu-item" onclick="setTab('recibos');_mnavCloseMenu()">
       <span class="mi-icon">🧾</span> Recibos
+    </button>
+    <button class="mobile-menu-item" onclick="setTab('misgastos');_mnavCloseMenu()">
+      <span class="mi-icon">👛</span> Mis gastos
     </button>
     <div style="height:1px;background:var(--border);margin:4px 0"></div>
     <button class="mobile-menu-item" style="color:var(--muted)" onclick="_mnavCloseMenu()">
